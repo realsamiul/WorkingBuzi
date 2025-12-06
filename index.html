@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Miniature Earth Test</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; }
+        #earth { width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <div id="earth"></div>
+    
+    <!-- Update this path to match your JS filename -->
+    <script src="miniature.earth.js"></script>
+    
+    <script>
+        // Basic initialization - no textures, just see if it works
+        try {
+            const earth = new Earth('earth', {
+                location: { lat: 0, lng: 0 },
+                zoom: 1,
+                autoRotate: true
+            });
+            
+            console.log('✅ Miniature Earth loaded successfully!');
+            
+            // Test if it's working
+            earth.addEventListener('ready', function() {
+                console.log('✅ Globe is ready!');
+                alert('Success! Miniature Earth is working!');
+            });
+            
+        } catch(error) {
+            console.error('❌ Error:', error);
+            alert('Error loading Miniature Earth: ' + error.message);
+        }
+    </script>
+</body>
+</html>
