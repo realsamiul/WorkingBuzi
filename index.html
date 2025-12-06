@@ -1,39 +1,601 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Miniature Earth Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel | Deep Space Scroll</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; }
-        #earth { width: 100vw; height: 100vh; }
+        /* --- Venturi-style Base Settings --- */
+        :root {
+            --ease-out: cubic-bezier(0.25, 0, 0.25, 1);
+            --text-color: #f4f4f4;
+            --accent-color: #ff3509; /* Venturi Orange */
+        }
+
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #040404; 
+            color: var(--text-color); 
+            overflow-x: hidden; 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- Canvas Container --- */
+        #scene-container { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 1; 
+            opacity: 0; /* Fade in on load */
+            transition: opacity 1s ease-out;
+        }
+
+        /* --- UI Overlay Elements --- */
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            pointer-events: none; /* Let scroll pass through */
+        }
+
+        .scroll-section {
+            height: 150vh; /* Long sections for smooth scrubbing */
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .text-block {
+            background: rgba(4, 4, 4, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            max-width: 500px;
+            border-left: 2px solid var(--accent-color);
+            transform: translateY(30px);
+            opacity: 0;
+            transition: all 0.8s var(--ease-out);
+            margin-left: 10%;
+        }
+
+        /* Active state for text */
+        .scroll-section.active .text-block {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        h2 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        h1 {
+            font-size: 3rem;
+            line-height: 1.1;
+            margin: 0 0 1.5rem 0;
+            font-weight: 300;
+            text-transform: uppercase;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: rgba(244, 244, 244, 0.8);
+        }
+
+        /* Stats Overlay (Mocking the moon-stats from your files) */
+        .hud-stats {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            display: flex;
+            gap: 2rem;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding-right: 1rem;
+        }
+
+        .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; }
+        .stat-value { font-size: 1.5rem; font-family: 'Courier New', monospace; font-weight: 700; }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #040404;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.8s var(--ease-out);
+        }
+        
+        .loader-bar { width: 200px; height: 2px; background: #222; margin-top: 20px; position: relative; overflow: hidden; }
+        .loader-progress { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: var(--accent-color); transition: width 0.2s linear; }
+
     </style>
+
+    <!-- Import Maps -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+                "globe.gl": "https://unpkg.com/globe.gl@2.30.0/dist/globe.gl.mjs",
+                "gsap": "https://unpkg.com/gsap@3.12.5/index.js",
+                "gsap/ScrollTrigger": "https://unpkg.com/gsap@3.12.5/ScrollTrigger.js"
+            }
+        }
+    </script>
 </head>
 <body>
-    <div id="earth"></div>
-    
-    <!-- Update this path to match your JS filename -->
-    <script src="miniature.earth.js"></script>
-    
-    <script>
-        // Basic initialization - no textures, just see if it works
-        try {
-            const earth = new Earth('earth', {
-                location: { lat: 0, lng: 0 },
-                zoom: 1,
-                autoRotate: true
+
+    <!-- Loader -->
+    <div id="loader">
+        <h1 style="font-size: 1.2rem; letter-spacing: 0.3em;">INITIALIZING SYSTEMS</h1>
+        <div class="loader-bar"><div class="loader-progress" id="progress-bar"></div></div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="scene-container"></div>
+
+    <!-- HUD Stats (Dynamic) -->
+    <div class="hud-stats" id="hud">
+        <div class="stat-item">
+            <span class="stat-label">Altitude</span>
+            <span class="stat-value" id="alt-val">20,000 km</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Coordinates</span>
+            <span class="stat-value" id="coord-val">0, 0</span>
+        </div>
+    </div>
+
+    <!-- Scroll Content -->
+    <div class="ui-layer">
+        
+        <!-- SECTION 1: Satellite / Deep Space -->
+        <section class="scroll-section" id="sec-1">
+            <div class="text-block">
+                <h2>Phase 01</h2>
+                <h1>Orbital Insertion</h1>
+                <p>The Sentinel platform enters high orbit. Solar arrays deployed. Systems green. We are currently drifting in the silence of deep space.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Earth Reveal -->
+        <section class="scroll-section" id="sec-2">
+            <div class="text-block">
+                <h2>Phase 02</h2>
+                <h1>The Blue Marble</h1>
+                <p>Visual contact established. Rotating sensors to Earth-facing vector. The atmosphere is visible.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Data Viz 1 (Population) -->
+        <section class="scroll-section" id="sec-3">
+            <div class="text-block">
+                <h2>Data Analysis</h2>
+                <h1>Human Density</h1>
+                <p>Activating LIDAR and thermal imaging. Hex-bin aggregation revealing population centers across the northern hemisphere.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 4: Data Viz 2 (Geo) -->
+        <section class="scroll-section" id="sec-4">
+            <div class="text-block">
+                <h2>Global Scan</h2>
+                <h1>Geopolitical Boundaries</h1>
+                <p>Switching to choropleth rendering mode. Analyzing national borders and GDP output metrics.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 5: Zoom to Target -->
+        <section class="scroll-section" id="sec-5">
+            <div class="text-block">
+                <h2>Target Acquired</h2>
+                <h1>Bangladesh</h1>
+                <p>Locking coordinates (23.68° N, 90.35° E). Initiating precision descent for high-resolution imaging.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 6: Outro -->
+        <section class="scroll-section" id="sec-6">
+            <div class="text-block">
+                <h2>Mission Complete</h2>
+                <h1>Return to Orbit</h1>
+                <p>Data stream concluding. Returning to parking orbit for next assignment.</p>
+            </div>
+        </section>
+
+        <div style="height: 50vh;"></div> <!-- Spacing at bottom -->
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import Globe from 'globe.gl';
+        import gsap from 'gsap';
+        import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+        // --- 1. Setup & Configuration ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        const CONFIG = {
+            satPosition: { x: 80, y: 40, z: 120 }, // Starting pos relative to Earth
+            bangladesh: { lat: 23.68, lng: 90.35, alt: 0.1 },
+            spaceColor: 0x040404,
+            fogColor: 0x050505
+        };
+
+        const container = document.getElementById('scene-container');
+        const hud = document.getElementById('hud');
+        
+        // --- 2. Initialize Globe.gl ---
+        // We use Globe.gl as the engine, but we access its internal Three.js scene
+        const world = Globe()
+            (container)
+            .backgroundColor('#040404')
+            .showAtmosphere(true)
+            .atmosphereColor('#3a228a')
+            .atmosphereAltitude(0.2)
+            .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+            .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
+
+        // Access internal Three.js instances
+        const scene = world.scene();
+        const camera = world.camera();
+        const controls = world.controls();
+        const renderer = world.renderer();
+
+        // Optimize Renderer
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        
+        // Disable default controls so GSAP can take over
+        controls.enabled = false; 
+
+        // Add Fog for depth
+        scene.fog = new THREE.FogExp2(CONFIG.spaceColor, 0.002);
+
+        // --- 3. Custom Scene Elements ---
+
+        // A. Starfield (Particle System for better performance/look than BG image)
+        function createStars() {
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 3000;
+            const posArray = new Float32Array(starCount * 3);
+            
+            for(let i=0; i<starCount*3; i++) {
+                // Random positions in a sphere around 0,0,0
+                posArray[i] = (Math.random() - 0.5) * 2000;
+            }
+            
+            starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            // Twinkling material
+            const starMat = new THREE.PointsMaterial({
+                size: 1.2,
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true
             });
             
-            console.log('✅ Miniature Earth loaded successfully!');
-            
-            // Test if it's working
-            earth.addEventListener('ready', function() {
-                console.log('✅ Globe is ready!');
-                alert('Success! Miniature Earth is working!');
-            });
-            
-        } catch(error) {
-            console.error('❌ Error:', error);
-            alert('Error loading Miniature Earth: ' + error.message);
+            const stars = new THREE.Points(starGeo, starMat);
+            scene.add(stars);
+            return stars;
         }
+        const stars = createStars();
+
+        // B. Cinematic Lighting
+        // Dim ambient light
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Soft white
+        scene.add(ambientLight);
+
+        // Harsh directional light (Sun)
+        const sunLight = new THREE.DirectionalLight(0xffffff, 3.5);
+        sunLight.position.set(-100, 50, 150);
+        sunLight.castShadow = true;
+        scene.add(sunLight);
+
+        // Rim light for Satellite
+        const rimLight = new THREE.SpotLight(0x00ffff, 5);
+        rimLight.position.set(50, 50, 50);
+        rimLight.lookAt(CONFIG.satPosition.x, CONFIG.satPosition.y, CONFIG.satPosition.z);
+        scene.add(rimLight);
+
+        // C. Satellite Model
+        let satelliteGroup = new THREE.Group();
+        scene.add(satelliteGroup);
+
+        // Fallback procedural satellite (if GLB fails or while loading)
+        function createFallbackSatellite() {
+            const group = new THREE.Group();
+            
+            // Gold Foil Material
+            const goldMat = new THREE.MeshStandardMaterial({
+                color: 0xffaa00,
+                metalness: 1.0,
+                roughness: 0.3,
+                bumpScale: 0.02
+            });
+
+            // Dark Panel Material
+            const panelMat = new THREE.MeshStandardMaterial({
+                color: 0x111111,
+                metalness: 0.2,
+                roughness: 0.1,
+                emissive: 0x000022,
+                emissiveIntensity: 0.2
+            });
+
+            // Body
+            const body = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 8), goldMat);
+            group.add(body);
+
+            // Panels
+            const panelGeo = new THREE.BoxGeometry(24, 0.5, 6);
+            const panelL = new THREE.Mesh(panelGeo, panelMat);
+            panelL.position.set(-14, 0, 0);
+            const panelR = new THREE.Mesh(panelGeo, panelMat);
+            panelR.position.set(14, 0, 0);
+            
+            group.add(panelL);
+            group.add(panelR);
+            
+            // Detail bits
+            const dish = new THREE.Mesh(new THREE.CylinderGeometry(2, 0, 1, 16), new THREE.MeshStandardMaterial({color:0xdddddd}));
+            dish.rotation.x = Math.PI / 2;
+            dish.position.set(0, 0, 4.5);
+            group.add(dish);
+
+            return group;
+        }
+
+        const gltfLoader = new GLTFLoader();
+        gltfLoader.load(
+            './assets/sentinel.glb',
+            (gltf) => {
+                const model = gltf.scene;
+                model.scale.set(5, 5, 5); // Adjust scale as needed
+                satelliteGroup.clear(); // Remove fallback
+                satelliteGroup.add(model);
+                document.getElementById('loader').style.transform = 'translateY(-100%)';
+                document.getElementById('scene-container').style.opacity = 1;
+                initScrollAnimations();
+            },
+            (xhr) => {
+                // Progress
+                const pct = (xhr.loaded / xhr.total) * 100;
+                document.getElementById('progress-bar').style.width = pct + '%';
+            },
+            (error) => {
+                console.log('Using fallback model');
+                const fallback = createFallbackSatellite();
+                satelliteGroup.add(fallback);
+                document.getElementById('loader').style.transform = 'translateY(-100%)';
+                document.getElementById('scene-container').style.opacity = 1;
+                initScrollAnimations();
+            }
+        );
+
+        // Initial Satellite Pos
+        satelliteGroup.position.set(CONFIG.satPosition.x, CONFIG.satPosition.y, CONFIG.satPosition.z);
+        satelliteGroup.lookAt(0, 0, 0); // Face earth initially
+
+        // --- 4. Data Visualizations ---
+        // Generate random data
+        const N_DATA = 1000;
+        const randomData = [...Array(N_DATA).keys()].map(() => ({
+            lat: (Math.random() - 0.5) * 180,
+            lng: (Math.random() - 0.5) * 360,
+            val: Math.random()
+        }));
+
+        world.hexBinPointsData(randomData)
+             .hexBinPointWeight('val')
+             .hexBinResolution(3)
+             .hexMargin(0.2)
+             .hexBinColor(() => 'transparent') // Hide initially
+             .hexAltitude(0); // Flat initially
+
+        // Load Countries for Polygons
+        fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
+            .then(res => res.json())
+            .then(countries => {
+                world.polygonsData(countries)
+                     .polygonCapColor(() => 'transparent')
+                     .polygonSideColor(() => 'transparent')
+                     .polygonStrokeColor(() => 'transparent');
+            });
+
+
+        // --- 5. The Cinematic Timeline (GSAP) ---
+        
+        function initScrollAnimations() {
+            // Camera Proxy: GSAP updates this, we apply to ThreeJS camera in render loop
+            // We use a proxy because Globe.gl's 'pointOfView' helper is nice, but we want manual control for the satellite orbit.
+            // Actually, blending manual camera position with Globe.gl's pov is tricky.
+            // Strategy: We will strictly control camera.position and controls.target via GSAP.
+            
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".ui-layer",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 2, // Smooth scrubbing (2 seconds to catch up) = heavy feel
+                }
+            });
+
+            // Initial Camera State
+            camera.position.set(
+                CONFIG.satPosition.x + 30, 
+                CONFIG.satPosition.y + 10, 
+                CONFIG.satPosition.z + 30
+            );
+            controls.target.copy(satelliteGroup.position); // Look at satellite
+
+            // Helper to activate UI sections
+            function textAnim(id) {
+                return {
+                    onStart: () => document.getElementById(id).classList.add('active'),
+                    onReverseComplete: () => document.getElementById(id).classList.remove('active')
+                };
+            }
+
+            // --- ANIMATION STEPS ---
+
+            // 1. Orbit Satellite (Deep Space) -> Reveal Earth
+            tl.to(camera.position, {
+                x: 0, y: 50, z: 250, // Move to wide orbit
+                duration: 5,
+                ease: "power2.inOut",
+                ...textAnim('sec-2')
+            })
+            .to(controls.target, {
+                x: 0, y: 0, z: 0, // Look at Earth center
+                duration: 5,
+                ease: "power2.inOut"
+            }, "<"); // Run at same time
+
+            // 2. Rotate Earth & Activate Hex Data
+            tl.to(scene.rotation, {
+                y: 3, // Rotate the whole scene/earth
+                duration: 4,
+                ease: "none" // Linear rotation while scrolling
+            }, "phase2")
+            .to(camera.position, {
+                z: 180, // Closer
+                duration: 4,
+                ...textAnim('sec-3')
+            }, "phase2")
+            // Fade in Hex Data
+            .call(() => {
+                world.hexBinColor(d => `rgba(0, 255, 255, ${d.sumWeight})`)
+                     .hexAltitude(d => d.sumWeight * 0.2);
+                hud.style.opacity = 1;
+            }, null, "phase2+=1");
+
+            // 3. Switch to Polygons (Geo)
+            tl.to({}, { duration: 1 }) // Pause beat
+            .call(() => {
+                // Clear Hex
+                world.hexBinColor(() => 'transparent').hexAltitude(0);
+                // Show Polygons
+                world.polygonStrokeColor(() => '#ff3509') // Venturi orange
+                     .polygonCapColor(() => 'rgba(255, 53, 9, 0.1)');
+                textAnim('sec-4').onStart();
+            });
+
+            // 4. Zoom to Bangladesh
+            // For precise Lat/Lng zoom, we calculate vector
+            // Bangladesh: 23.68, 90.35. 
+            // We need to rotate the earth so this point faces camera (0,0,z) OR move camera to that vector.
+            // Moving camera is easier with Globe.gl utils, but we are manual.
+            // Let's use world.pointOfView() inside a tween update for this specific segment.
+            
+            let zoomProxy = { lat: 0, lng: 0, alt: 2.5 }; // Start high
+            
+            tl.to(zoomProxy, {
+                lat: CONFIG.bangladesh.lat,
+                lng: CONFIG.bangladesh.lng,
+                alt: CONFIG.bangladesh.alt, // Very close
+                duration: 6,
+                ease: "power3.inOut", // Dramatic zoom
+                onUpdate: () => {
+                    world.pointOfView({
+                        lat: zoomProxy.lat, 
+                        lng: zoomProxy.lng, 
+                        altitude: zoomProxy.alt
+                    });
+                },
+                onStart: () => {
+                    document.getElementById('sec-5').classList.add('active');
+                    // Hide overlays for clear view
+                    world.polygonCapColor(() => 'transparent');
+                }
+            });
+
+            // 5. Pull Back to Satellite
+            // We need to reset the camera mechanism from pointOfView back to manual position
+            // This can be tricky. We'll simply pull altitude back up and rotate earth.
+            tl.to(zoomProxy, {
+                alt: 3.5,
+                duration: 4,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    world.pointOfView({
+                        lat: zoomProxy.lat, 
+                        lng: zoomProxy.lng, 
+                        altitude: zoomProxy.alt
+                    });
+                },
+                onStart: () => document.getElementById('sec-6').classList.add('active')
+            });
+            
+            // Final move: Bring satellite back into view (Illusion)
+            // We move the satellite group in front of the camera
+            tl.to(satelliteGroup.position, {
+                x: 0, y: 0, z: 100, // Roughly where camera is looking
+                duration: 2,
+                ease: "expo.out"
+            }, "-=2");
+        }
+
+        // --- 6. Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Idle rotation of satellite
+            satelliteGroup.rotation.y += 0.005;
+            satelliteGroup.rotation.z += 0.001;
+
+            // Twinkle stars
+            stars.rotation.y -= 0.0002;
+
+            // Update Stats
+            if(hud.style.opacity > 0) {
+                // Fake changing numbers
+                document.getElementById('coord-val').innerText = 
+                    (camera.position.x).toFixed(1) + ', ' + (camera.position.z).toFixed(1);
+            }
+
+            // Sync Directional Light with Camera for "Flash" effect?
+            // Venturi often keeps light static but dramatic. We keep sunLight static.
+            
+            // Globe.gl internal render
+            // (Controls are disabled, so we rely on GSAP updating camera/scene)
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            world.width(window.innerWidth);
+            world.height(window.innerHeight);
+        });
+
     </script>
 </body>
 </html>
+
+
