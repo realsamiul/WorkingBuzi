@@ -5,77 +5,156 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Venturi Space | Mission Control</title>
     
-    <!-- Fonts -->
+    <!-- FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- GSAP (Global) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --black: 4, 4, 4;
-            --body: 4, 4, 4;
-            --text: 244, 244, 244;
-            --white: 255, 255, 255;
-            --orange: 255, 53, 9;
-            --grey: 26, 26, 26;
-            --ease: cubic-bezier(0.25, 0, 0.25, 1);
-            --font-display: 'Barlow', sans-serif;
+            --bg-color: #040404;
+            --text-color: #f4f4f4;
+            --accent-color: #ff3509;
+            --border-color: rgba(255, 255, 255, 0.2);
+            --font-main: 'Barlow', sans-serif;
             --font-tech: 'Rajdhani', sans-serif;
+            --ease-venturi: cubic-bezier(0.25, 0, 0.25, 1);
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background-color: rgb(var(--body));
-            color: rgb(var(--text));
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
             overflow-x: hidden;
-            font-family: var(--font-display);
             -webkit-font-smoothing: antialiased;
-            overflow-y: auto;
-            height: 100%;
+            transition: background-color 0.8s var(--ease-venturi);
         }
 
-        [c-font*="yell_1"] {
+        /* --- LIGHT MODE --- */
+        body.light-mode {
+            --bg-color: #e5e5e5;
+            --text-color: #111111;
+            --border-color: rgba(0, 0, 0, 0.15);
+        }
+        body.light-mode #globe-container { opacity: 0.05; filter: grayscale(100%); }
+
+        /* --- TYPOGRAPHY --- */
+        [c-font="yell_1"] {
             font-family: var(--font-tech);
-            font-size: clamp(3rem, 8vw, 12.5rem);
-            line-height: 0.9;
+            font-size: clamp(4rem, 12vw, 14rem);
+            line-height: 0.85;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: -0.02em;
         }
-        
-        [c-font*="title_2"] {
+
+        [c-font="title_2"] {
             font-family: var(--font-tech);
-            font-size: clamp(2rem, 5vw, 5.5rem);
-            line-height: 0.96;
+            font-size: clamp(2rem, 5vw, 5rem);
+            line-height: 1;
             text-transform: uppercase;
             font-weight: 600;
         }
 
-        [c-font*="body_3"] {
-            font-size: 1.3rem;
-            line-height: 1.25;
+        [c-font="label"] {
+            font-family: var(--font-tech);
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            padding: 0.5em 1em;
+            display: inline-block;
+            margin-bottom: 2rem;
         }
 
-        /* Preloader */
-        .loader {
-            position: fixed;
-            inset: 0;
-            z-index: 200;
+        p { font-size: 1.1rem; line-height: 1.6; opacity: 0.8; max-width: 40ch; margin-top: 1.5rem; }
+
+        /* --- HUD GRID (Rebuilt to match Image 2) --- */
+        .hud-container {
+            margin-top: 3rem;
+            max-width: 600px;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr 1fr auto; /* 2 columns for data + 1 column for vertical status pills */
+        }
+
+        .hud-cell {
+            padding: 1.5rem 2rem;
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        /* Remove bottom border for last row to avoid double borders with container */
+        .hud-cell:nth-child(n+4) { border-bottom: none; }
+        
+        /* The vertical status bar on the right */
+        .hud-status-col {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid transparent; /* spacing fix */
+        }
+        
+        .hud-status-item {
+            flex: 1;
+            padding: 0.5rem 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            pointer-events: none;
-            background: rgb(var(--body));
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            font-family: var(--font-tech);
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            border-left: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            opacity: 0.6;
+        }
+        .hud-status-item:last-child { border-bottom: none; }
+
+        .hud-lbl { 
+            font-size: 0.7rem; 
+            opacity: 0.5; 
+            letter-spacing: 0.1em; 
+            text-transform: uppercase; 
+            margin-bottom: 0.25rem;
+            font-family: var(--font-main);
+        }
+        
+        .hud-val { 
+            font-family: var(--font-tech); 
+            font-size: 2.2rem; 
+            line-height: 1; 
+            font-weight: 500; 
+            display: block; 
+        }
+        
+        .hud-unit {
+            font-size: 0.9rem;
+            margin-left: 0.2rem;
+            opacity: 0.7;
         }
 
-        .loader-fill {
-            position: fixed;
-            inset: 0;
-            background: rgb(var(--body));
-            transition: transform 1s var(--ease);
-            transform-origin: top;
+        /* --- PRELOADER --- */
+        .loader {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #040404;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: transform 1.2s var(--ease-venturi);
         }
+        .loader.hidden { transform: translateY(-100%); }
 
         .loader-data {
             position: relative;
@@ -84,21 +163,7 @@
             flex-direction: column;
             align-items: center;
             gap: 2rem;
-            transition: opacity 0.5s var(--ease);
-        }
-
-        .loader.hidden {
-            pointer-events: none;
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.5s var(--ease), visibility 0.5s;
-        }
-
-        .loader.hidden .loader-fill { 
-            transform: scaleY(0); 
-        }
-        .loader.hidden .loader-data { 
-            opacity: 0; 
+            transition: opacity 0.5s var(--ease-venturi);
         }
 
         .loader-status {
@@ -114,7 +179,7 @@
 
         .loader-status span {
             display: block;
-            transition: transform 0.5s var(--ease);
+            transition: transform 0.5s var(--ease-venturi);
         }
 
         .loader-status.launching .loader-prepare { transform: translateY(-100%); }
@@ -132,30 +197,29 @@
             margin-right: 1rem;
         }
 
-        .loader-bars rect {
-            fill: rgba(255, 255, 255, 0.5);
-            animation: pulse 2s steps(3) infinite;
+        .loader-bar-group rect { 
+            fill: rgba(255,255,255,0.2); 
+            animation: pulse 0.8s infinite alternate; 
         }
-        .loader-bars rect:nth-child(1) { animation-delay: 0.23s; }
-        .loader-bars rect:nth-child(2) { animation-delay: 0.46s; }
-        .loader-bars rect:nth-child(3) { animation-delay: 0.69s; }
+        .loader-bar-group rect:nth-child(2) { animation-delay: 0.1s; }
+        .loader-bar-group rect:nth-child(3) { animation-delay: 0.2s; }
+        .loader-bar-group rect:nth-child(4) { animation-delay: 0.3s; }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.2; }
+        @keyframes pulse { 
+            to { fill: var(--accent-color); } 
         }
 
-        /* Globe Container */
+        /* --- GLOBE CONTAINER --- */
         #globe-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
             opacity: 0;
-            transition: opacity 2s var(--ease);
+            transition: opacity 2s var(--ease-venturi);
             pointer-events: none;
         }
 
-        /* Scroll Sections */
+        /* --- SCROLL SECTIONS --- */
         .scroll-container {
             position: relative;
             z-index: 10;
@@ -163,142 +227,76 @@
         }
 
         .section {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
-            align-items: center;
-            padding: 0 10%;
+            flex-direction: column;
+            justify-content: center;
+            padding: 6rem 5vw;
             position: relative;
-            pointer-events: none;
-            position: sticky;
-            top: 0;
         }
 
-        .content-box {
-            max-width: 60rem;
-            pointer-events: auto;
-            transform: translateY(50px);
-            opacity: 0;
-            transition: all 1s var(--ease);
-        }
-        
-        .section.active .content-box {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .layout-right { align-items: flex-end; text-align: right; }
+        .layout-center { align-items: center; text-align: center; }
 
-        .label {
-            color: rgb(var(--orange));
-            border: 1px solid rgb(var(--orange));
-            padding: 0.5rem 1rem;
-            display: inline-block;
-            margin-bottom: 2rem;
+        /* Timeline Years */
+        .year-row {
+            display: flex; align-items: baseline; gap: 3rem;
+            padding: 2rem 0; border-bottom: 1px solid var(--border-color);
+        }
+        .year { font-family: var(--font-tech); font-size: 5rem; line-height: 1; font-weight: 300; min-width: 200px; color: var(--accent-color); }
+        .desc { font-size: 1.1rem; max-width: 400px; }
+
+        /* Button */
+        .btn-v {
+            margin-top: 3rem;
+            background: var(--accent-color);
+            color: white;
             font-family: var(--font-tech);
             text-transform: uppercase;
-            font-size: 0.8rem;
-            letter-spacing: 0.1em;
-        }
-
-        p { 
-            opacity: 0.7; 
-            max-width: 40ch; 
-            margin-top: 1rem; 
-            font-size: 1.1rem; 
-            line-height: 1.5; 
-        }
-
-        /* HUD */
-        .coords-hud {
-            position: fixed;
-            bottom: 3rem;
-            right: 3rem;
-            text-align: right;
-            font-family: var(--font-tech);
-            z-index: 20;
-            opacity: 0;
-            transition: opacity 1s var(--ease);
-            pointer-events: none;
-        }
-        .coords-hud h4 { 
-            color: rgb(var(--orange)); 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-            font-size: 0.8rem; 
-            margin: 0 0 0.5rem 0;
-        }
-        .coords-hud span { 
-            font-size: 2rem; 
-            font-weight: 600; 
-            display: block; 
-        }
-
-        /* Mission Stats */
-        .mission-stats {
-            position: fixed;
-            top: 3rem;
-            left: 3rem;
-            font-family: var(--font-tech);
-            z-index: 20;
-            opacity: 0;
-            transition: opacity 1s var(--ease);
-            pointer-events: none;
-        }
-        .mission-stats.visible { 
-            opacity: 1; 
-        }
-        .stat-item {
-            display: flex;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            display: inline-flex;
             align-items: center;
             gap: 1rem;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
+            clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            pointer-events: auto;
         }
-        .stat-dot {
-            width: 8px;
-            height: 8px;
-            background: rgb(var(--orange));
-            border-radius: 50%;
-            animation: blink 2s infinite;
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
+        .btn-v:hover { transform: translateY(-5px); }
 
-        .scroll-indicator {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-            color: rgb(var(--orange));
-            font-family: var(--font-tech);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            font-size: 0.8rem;
-            opacity: 0;
-            transition: opacity 1s var(--ease);
+        /* NAV */
+        nav {
+            position: fixed; top: 0; width: 100%; padding: 2rem;
+            display: flex; justify-content: space-between; z-index: 100;
+            mix-blend-mode: difference; color: white;
             pointer-events: none;
         }
+        nav > * { pointer-events: auto; }
+        .logo { font-family: var(--font-tech); font-weight: 700; letter-spacing: 0.2em; font-size: 1.2rem; }
 
-        .scroll-indicator.visible {
-            opacity: 0.7;
+        /* Mobile adjustment for HUD */
+        @media (max-width: 768px) {
+            .hud-container { grid-template-columns: 1fr; }
+            .hud-cell:nth-child(2) { border-right: none; }
+            .hud-status-col { display: none; } /* Hide vertical bars on mobile */
         }
     </style>
 
-    <!-- GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    
-    <!-- Globe.gl -->
-    <script src="https://unpkg.com/globe.gl"></script>
-    <!-- THREE.js -->
+    <!-- THREE.js and Globe.gl -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/globe.gl"></script>
 </head>
 <body>
 
+    <!-- NAV -->
+    <nav>
+        <div class="logo">VENTURI SPACE</div>
+        <div style="font-family: var(--font-tech); font-weight: 600; font-size: 0.9rem; background: white; color: black; padding: 0.5rem 1rem;">MENU</div>
+    </nav>
+
     <!-- PRELOADER -->
     <div class="loader" id="loader">
-        <div class="loader-fill"></div>
         <div class="loader-data">
             <svg class="asset loader-logo" width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10,10 L30,30 L50,10" fill="none" stroke="white" stroke-width="4"/>
@@ -311,12 +309,12 @@
             </div>
             
             <div class="loader-countdown">
-                <svg class="asset loader-bars" width="39" height="10" viewBox="0 0 39 10" fill="none">
-                    <rect opacity="0.2" width="1" height="10" x="38" fill="#D9D9D9"></rect>
-                    <rect opacity="0.6" width="1" height="10" x="22" fill="#D9D9D9"></rect>
-                    <rect opacity="0.3" width="2" height="10" x="26" fill="#D9D9D9"></rect>
-                    <rect opacity="0.8" width="3" height="10" x="8" fill="#D9D9D9"></rect>
-                    <rect opacity="0.1" width="4" height="10" x="34" fill="#D9D9D9"></rect>
+                <svg class="loader-bar-group" width="60" height="40">
+                    <rect x="5" y="10" width="4" height="20" />
+                    <rect x="15" y="5" width="4" height="30" />
+                    <rect x="25" y="15" width="4" height="10" />
+                    <rect x="35" y="0" width="4" height="40" />
+                    <rect x="45" y="12" width="4" height="16" />
                 </svg>
                 <span class="loader-time" id="loaderTime">00:10:00</span>
             </div>
@@ -326,51 +324,78 @@
     <!-- GLOBE CONTAINER -->
     <div id="globe-container"></div>
 
-    <!-- SCROLL INDICATOR -->
-    <div class="scroll-indicator" id="scrollIndicator">Scroll to explore mission</div>
-
-    <!-- MISSION STATS HUD -->
-    <div class="mission-stats" id="mission-stats">
-        <div class="stat-item">
-            <span class="stat-dot"></span>
-            <span>MISSION: ACTIVE</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-dot" style="animation-delay: 0.5s;"></span>
-            <span id="altitude-display">ALT: 400 KM</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-dot" style="animation-delay: 1s;"></span>
-            <span id="velocity-display">VEL: 7.66 KM/S</span>
-        </div>
-    </div>
-
-    <!-- COORDS HUD -->
-    <div class="coords-hud" id="hud">
-        <h4>Target Coordinates</h4>
-        <span id="coord-display">00°00'00" N</span>
-    </div>
-
     <!-- SCROLL CONTENT -->
     <div class="scroll-container">
         
-        <section class="section" id="sec-1">
-            <div class="content-box">
-                <span class="label">Phase 01</span>
+        <!-- 1. INTRO (3D: Satellite in Deep Space) -->
+        <section class="section" id="s1">
+            <div style="margin-top: auto;">
+                <div c-font="label">Phase 01</div>
                 <h1 c-font="yell_1">Orbital<br>Injection</h1>
                 <p>The Sentinel satellite stabilizes in high Earth orbit. Systems diagnostic complete. Establishing downlink.</p>
             </div>
         </section>
 
-        <section class="section" id="sec-2">
-            <div class="content-box" style="margin-left: auto; text-align: right;">
-                <span class="label">Phase 02</span>
-                <h2 c-font="title_2">Earth Observation</h2>
-                <p>Visual confirmation of the Blue Marble. Atmospheric sensors active. Preparing for data overlay.</p>
+        <!-- 2. VENTURI HISTORY (Standard Layout / Light Mode) -->
+        <section class="section" id="s2">
+            <div style="max-width: 800px; margin: 0 auto; width: 100%;">
+                <div c-font="label" style="margin-bottom: 4rem;">Legacy</div>
+                
+                <div class="year-row">
+                    <div class="year">2000</div>
+                    <div class="desc">Monegasque entrepreneur Gildo Pastor bought French carmaker Venturi.</div>
+                </div>
+                <div class="year-row">
+                    <div class="year">26</div>
+                    <div class="desc">World speed records with two and four wheel vehicles.</div>
+                </div>
+                <div class="year-row">
+                    <div class="year">549</div>
+                    <div class="desc">The Venturi VBB-3 is the fastest electric vehicle in history (km/h).</div>
+                </div>
             </div>
         </section>
 
-        <section class="section" id="sec-3">
+        <!-- 3. EARTH OBSERVATION (3D: Earth Globe) -->
+        <section class="section layout-right" id="s3">
+            <div style="max-width: 600px;">
+                <div c-font="label">Global Scan</div>
+                <h1 c-font="yell_1" style="font-size: clamp(3rem, 8vw, 8rem);">Earth<br>View</h1>
+                <p style="margin-left: auto;">Visual contact established. Rotating sensors to Earth-facing vector. Population density map overlay active.</p>
+                
+                <!-- HUD GRID: EARTH VARIANT -->
+                <div class="hud-container" style="margin-left: auto;">
+                    <!-- Row 1 -->
+                    <div class="hud-cell">
+                        <span class="hud-lbl">ALTITUDE</span>
+                        <span class="hud-val">400<span class="hud-unit">KM</span></span>
+                    </div>
+                    <div class="hud-cell">
+                        <span class="hud-lbl">VELOCITY</span>
+                        <span class="hud-val">7.66<span class="hud-unit">KM/S</span></span>
+                    </div>
+                    
+                    <!-- Row 2 -->
+                    <div class="hud-cell">
+                        <span class="hud-lbl">INCLINATION</span>
+                        <span class="hud-val">51.6<span class="hud-unit">DEG</span></span>
+                    </div>
+                    <div class="hud-cell">
+                        <span class="hud-lbl">PERIOD</span>
+                        <span class="hud-val">92.6<span class="hud-unit">MIN</span></span>
+                    </div>
+
+                    <!-- Vertical Status Column -->
+                    <div class="hud-status-col">
+                        <div class="hud-status-item">DAY 102</div>
+                        <div class="hud-status-item">LEO</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. ANALYSIS -->
+        <section class="section" id="s4">
             <div class="content-box">
                 <span class="label">Analysis</span>
                 <h2 c-font="title_2">Population Density</h2>
@@ -378,30 +403,61 @@
             </div>
         </section>
 
-        <section class="section" id="sec-4">
-            <div class="content-box" style="margin-left: auto;">
-                <span class="label">Target Acquired</span>
+        <!-- 5. BANGLADESH ZOOM -->
+        <section class="section layout-right" id="s5">
+            <div style="max-width: 600px;">
+                <div c-font="label">Target Acquired</div>
                 <h1 c-font="title_2">Dhaka, Bangladesh</h1>
                 <p>Precision coordinates locked. High-resolution scanning initiated at 23.68° N, 90.35° E.</p>
             </div>
         </section>
 
-        <section class="section" id="sec-5">
-            <div class="content-box">
-                <span class="label">Phase 03</span>
-                <h2 c-font="title_2">Lunar Transfer</h2>
-                <p>Leaving Earth orbit. Calculating trajectory for lunar injection. Destination: South Pole-Aitken basin.</p>
+        <!-- 6. TRANSITION TEXT (Standard Layout) -->
+        <section class="section layout-center" id="s6">
+            <h1 c-font="title_2" style="max-width: 900px;">"Space has changed, but spacecraft haven't. We need a better vehicle for this modern domain."</h1>
+            <div class="btn-v">Our Technology <span>→</span></div>
+        </section>
+
+        <!-- 7. MOON ARRIVAL (3D: Moon Globe) -->
+        <section class="section" id="s7">
+            <div>
+                <h1 c-font="title_2">Exploring The<br>Lunar South Pole</h1>
+                
+                <!-- HUD GRID: MOON VARIANT (Matches Reference Image) -->
+                <div class="hud-container">
+                    <!-- Row 1 -->
+                    <div class="hud-cell">
+                        <span class="hud-lbl">DIAMETER ~</span>
+                        <span class="hud-val">3 474<span class="hud-unit">KM</span></span>
+                    </div>
+                    <div class="hud-cell">
+                        <span class="hud-lbl">GRAVITY</span>
+                        <span class="hud-val">1.62<span class="hud-unit">m/s²</span></span>
+                    </div>
+                    
+                    <!-- Row 2 -->
+                    <div class="hud-cell">
+                        <span class="hud-lbl">DENSITY</span>
+                        <span class="hud-val">3 344<span class="hud-unit">kg/m³</span></span>
+                    </div>
+                    <div class="hud-cell">
+                        <span class="hud-lbl">INCLINATION</span>
+                        <span class="hud-val">6.68<span class="hud-unit">deg</span></span>
+                    </div>
+
+                    <!-- Vertical Status Column -->
+                    <div class="hud-status-col">
+                        <div class="hud-status-item">DAY 340</div>
+                        <div class="hud-status-item">PHASE -3</div>
+                    </div>
+                </div>
+
+                <p>Ice hidden deep in the craters. Exceptional levels of sunlight. The Moon's South Pole is a land of opportunity.</p>
+                <div class="btn-v">Start Mission <span>→</span></div>
             </div>
         </section>
 
-        <section class="section" id="sec-6">
-            <div class="content-box" style="text-align: center; margin: auto;">
-                <span class="label">Destination</span>
-                <h1 c-font="yell_1">The Moon</h1>
-                <p>Orbit established. Venturi FLEX rover deployment sequence armed. Exploring the dark side.</p>
-            </div>
-        </section>
-
+        <div style="height: 50vh;"></div>
     </div>
 
     <script>
@@ -412,7 +468,6 @@
         const loaderEl = document.getElementById('loader');
         const loaderStatus = document.getElementById('loaderStatus');
         const loaderTime = document.getElementById('loaderTime');
-        const scrollIndicator = document.getElementById('scrollIndicator');
         let timeLeft = 3.0; // Reduced to 3 seconds for better UX
         
         const timerInterval = setInterval(() => {
@@ -429,11 +484,6 @@
 
         function launchSequence() {
             loaderStatus.classList.add('launching');
-            
-            // Show scroll indicator after a delay
-            setTimeout(() => {
-                scrollIndicator.classList.add('visible');
-            }, 500);
             
             setTimeout(() => {
                 loaderEl.classList.add('hidden');
@@ -459,13 +509,13 @@
             .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
             .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
             .showAtmosphere(true)
-            .atmosphereColor('rgba(100, 150, 255, 0.8)')
-            .atmosphereAltitude(0.25)
+            .atmosphereColor('rgba(60, 100, 255, 0.8)')
+            .atmosphereAltitude(0.15)
             .hexBinPointsData([])
             .hexBinPointWeight('pop')
             .hexBinResolution(4)
             .hexMargin(0.2)
-            .hexTopColor(() => 'rgba(255, 53, 9, 0.9)')
+            .hexTopColor(() => '#ff3509')
             .hexSideColor(() => 'rgba(255, 53, 9, 0.6)')
             .hexAltitude(d => d.sumWeight * 0.1)
             (container);
@@ -507,34 +557,34 @@
         
         // Main body
         const satBody = new THREE.Mesh(
-            new THREE.BoxGeometry(3, 3, 6),
-            new THREE.MeshStandardMaterial({ color: 0xff3509, roughness: 0.3, metalness: 0.8 })
+            new THREE.BoxGeometry(4, 4, 8),
+            new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.2, metalness: 0.9 })
         );
         satGroup.add(satBody);
 
         // Solar panels
         const panelMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1a1a3a, 
-            roughness: 0.2, 
+            color: 0x111111, 
+            roughness: 0.4, 
             metalness: 0.9,
             side: THREE.DoubleSide
         });
-        const leftPanel = new THREE.Mesh(new THREE.PlaneGeometry(15, 4), panelMat);
-        leftPanel.position.set(-10, 0, 0);
+        const leftPanel = new THREE.Mesh(new THREE.PlaneGeometry(24, 6), panelMat);
+        leftPanel.position.set(-12, 0, 0);
         leftPanel.rotation.y = Math.PI / 2;
         satGroup.add(leftPanel);
 
-        const rightPanel = new THREE.Mesh(new THREE.PlaneGeometry(15, 4), panelMat);
-        rightPanel.position.set(10, 0, 0);
+        const rightPanel = new THREE.Mesh(new THREE.PlaneGeometry(24, 6), panelMat);
+        rightPanel.position.set(12, 0, 0);
         rightPanel.rotation.y = Math.PI / 2;
         satGroup.add(rightPanel);
 
         // Antenna dish
         const dish = new THREE.Mesh(
-            new THREE.ConeGeometry(2.5, 4, 16),
+            new THREE.ConeGeometry(3, 5, 16),
             new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.7, roughness: 0.3 })
         );
-        dish.position.set(0, 4, 0);
+        dish.position.set(0, 5, 0);
         satGroup.add(dish);
 
         satGroup.position.set(80, 50, 200);
@@ -547,10 +597,6 @@
 
         // --- SCROLL ANIMATION ---
         function initExperience() {
-            document.getElementById('mission-stats').classList.add('visible');
-            document.getElementById('sec-1').classList.add('active');
-
-            // Create a master timeline
             const masterTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: ".scroll-container",
@@ -563,14 +609,11 @@
                 }
             });
 
-            // Phase 1: Initial view
+            // SECTION 1: Initial view
             masterTl.to(camera.position, {
                 z: 280,
                 duration: 2,
-                ease: "power2.out",
-                onStart: () => {
-                    document.getElementById('hud').style.opacity = 1;
-                }
+                ease: "power2.out"
             }, 0)
             .to(satGroup.position, {
                 x: 40, y: 30, z: 150,
@@ -581,93 +624,74 @@
                 duration: 2
             }, 0);
 
-            // Phase 2: Earth rotation
-            masterTl.to(camera.position, {
-                x: 50, y: 40, z: 220,
-                duration: 3,
-                onStart: () => {
-                    document.getElementById('sec-2').classList.add('active');
-                }
-            }, 2);
+            // SECTION 2: Light Mode / History
+            masterTl.call(() => document.body.classList.add('light-mode'), null, 2)
+            .to("#globe-container", { opacity: 0.1, duration: 1 }, 2);
 
-            // Phase 3: Show hex data
-            masterTl.to({}, {
-                duration: 0.5,
-                onStart: () => {
-                    document.getElementById('sec-3').classList.add('active');
-                    document.getElementById('coord-display').innerText = "POPULATION DENSITY";
-                    earthGlobe.hexBinPointsData(populationData);
-                    hexDataVisible = true;
-                }
-            }, 5)
+            // SECTION 3: Dark Mode / Earth Observation
+            masterTl.call(() => document.body.classList.remove('light-mode'), null, 4)
+            .to("#globe-container", { opacity: 1, duration: 1 }, 4)
             .to(camera.position, {
-                x: 30, y: 20, z: 200,
-                duration: 2
-            }, 5);
+                x: 50, y: 0, z: 220,
+                duration: 3
+            }, 4)
+            .to(earthGlobe.rotation, {
+                y: 2.5,
+                duration: 3
+            }, 4)
+            .to(satGroup.position, {
+                x: -40, y: 10, z: 120,
+                duration: 3
+            }, 4);
 
-            // Phase 4: Zoom to Bangladesh
-            masterTl.to({}, {
-                duration: 0.5,
-                onStart: () => {
-                    document.getElementById('sec-4').classList.add('active');
-                    document.getElementById('coord-display').innerText = "23.68° N, 90.35° E";
-                    earthGlobe.hexBinPointsData([]);
-                    hexDataVisible = false;
-                    earthGlobe.pointOfView({ lat: 23.68, lng: 90.35, altitude: 0.8 }, 2000);
-                }
-            }, 8)
+            // SECTION 4: Show population data
+            masterTl.call(() => {
+                earthGlobe.hexBinPointsData(populationData);
+                hexDataVisible = true;
+            }, null, 7);
+
+            // SECTION 5: Zoom to Bangladesh
+            masterTl.call(() => {
+                earthGlobe.hexBinPointsData([]);
+                hexDataVisible = false;
+                earthGlobe.pointOfView({ lat: 23.68, lng: 90.35, altitude: 0.8 }, 2000);
+            }, null, 9)
+            .to(camera.position, {
+                z: 180,
+                duration: 2
+            }, 9)
             .to(satGroup.position, {
                 x: -30, y: 60, z: 140,
                 duration: 2
-            }, 8);
+            }, 9);
 
-            // Phase 5: Transition to Moon
-            masterTl.to({}, {
-                duration: 0.5,
-                onStart: () => {
-                    document.getElementById('sec-5').classList.add('active');
-                    document.getElementById('coord-display').innerText = "LUNAR TRANSFER";
-                    currentPhase = 'transit';
-                }
-            }, 11)
-            .to(camera.position, {
-                z: 400,
-                duration: 2
-            }, 11)
-            .to({}, {
-                duration: 1,
-                onStart: () => {
-                    // Switch to Moon texture
-                    earthGlobe
-                        .globeImageUrl('https://unpkg.com/three-globe/example/img/moon.jpg')
-                        .bumpImageUrl('https://unpkg.com/three-globe/example/img/moon-topology.png')
-                        .showAtmosphere(false);
-                    currentPhase = 'moon';
-                }
-            }, 12);
+            // SECTION 6: Transition text (dim scene)
+            masterTl.to("#globe-container", { opacity: 0.3, duration: 2 }, 11);
 
-            // Phase 6: Moon orbit
-            masterTl.to({}, {
-                duration: 0.5,
-                onStart: () => {
-                    document.getElementById('sec-6').classList.add('active');
-                    document.getElementById('coord-display').innerText = "SOUTH POLE AITKEN";
-                    earthGlobe.pointOfView({ lat: -85, lng: 0, altitude: 1.5 }, 3000);
-                }
-            }, 14)
+            // SECTION 7: Moon Reveal
+            masterTl.call(() => {
+                // Switch to Moon texture
+                earthGlobe
+                    .globeImageUrl('https://unpkg.com/three-globe/example/img/moon.jpg')
+                    .bumpImageUrl('https://unpkg.com/three-globe/example/img/moon-topology.png')
+                    .showAtmosphere(false);
+                earthGlobe.pointOfView({ lat: -85, lng: 0, altitude: 1.5 }, 3000);
+                currentPhase = 'moon';
+            }, null, 13)
+            .to("#globe-container", { opacity: 1, duration: 2 }, 13)
             .to(camera.position, {
                 z: 280,
                 duration: 3
-            }, 14)
+            }, 13)
             .to(satGroup.position, {
                 x: -40, y: -20, z: 160,
                 duration: 3
-            }, 14)
+            }, 13)
             .to(satGroup.rotation, {
                 y: Math.PI * 2,
                 z: 0.5,
                 duration: 3
-            }, 14);
+            }, 13);
         }
 
         // Update HUD based on scroll progress
@@ -675,13 +699,12 @@
             const altitude = Math.round(400 - progress * 380 + (currentPhase === 'moon' ? 384400 : 0));
             const velocity = (7.66 + progress * 3.34).toFixed(2);
             
-            document.getElementById('altitude-display').innerText = 
-                currentPhase === 'moon' ? `ALT: ${altitude.toLocaleString()} KM` : `ALT: ${altitude} KM`;
-            document.getElementById('velocity-display').innerText = `VEL: ${velocity} KM/S`;
-            
-            // Hide scroll indicator after some scrolling
-            if (progress > 0.1) {
-                scrollIndicator.classList.remove('visible');
+            // Update altitude display
+            const altitudeDisplay = document.querySelector('.hud-val');
+            if (altitudeDisplay) {
+                altitudeDisplay.innerHTML = altitude === 'moon' ? 
+                    `${altitude.toLocaleString()}<span class="hud-unit">KM</span>` : 
+                    `${altitude}<span class="hud-unit">KM</span>`;
             }
         }
 
@@ -711,11 +734,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
         });
-
-        // Handle scroll to start animations
-        window.addEventListener('wheel', () => {
-            scrollIndicator.classList.remove('visible');
-        }, { once: true });
 
     </script>
 </body>
