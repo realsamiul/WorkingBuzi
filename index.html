@@ -5,156 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Venturi Space | Mission Control</title>
     
-    <!-- FONTS -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- GSAP (Global) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg-color: #040404;
-            --text-color: #f4f4f4;
-            --accent-color: #ff3509;
-            --border-color: rgba(255, 255, 255, 0.2);
-            --font-main: 'Barlow', sans-serif;
+            --black: 4, 4, 4;
+            --body: 4, 4, 4;
+            --text: 244, 244, 244;
+            --white: 255, 255, 255;
+            --orange: 255, 53, 9;
+            --grey: 26, 26, 26;
+            --ease: cubic-bezier(0.25, 0, 0.25, 1);
+            --font-display: 'Barlow', sans-serif;
             --font-tech: 'Rajdhani', sans-serif;
-            --ease-venturi: cubic-bezier(0.25, 0, 0.25, 1);
         }
 
         body {
-            margin: 0; padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            background-color: rgb(var(--body));
+            color: rgb(var(--text));
             overflow-x: hidden;
+            font-family: var(--font-display);
             -webkit-font-smoothing: antialiased;
-            transition: background-color 0.8s var(--ease-venturi);
+            overflow-y: auto;
+            height: 100%;
         }
 
-        /* --- LIGHT MODE --- */
-        body.light-mode {
-            --bg-color: #e5e5e5;
-            --text-color: #111111;
-            --border-color: rgba(0, 0, 0, 0.15);
-        }
-        body.light-mode #globe-container { opacity: 0.05; filter: grayscale(100%); }
-
-        /* --- TYPOGRAPHY --- */
-        [c-font="yell_1"] {
-            font-family: var(--font-tech);
-            font-size: clamp(4rem, 12vw, 14rem);
-            line-height: 0.85;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: -0.02em;
-        }
-
-        [c-font="title_2"] {
-            font-family: var(--font-tech);
-            font-size: clamp(2rem, 5vw, 5rem);
-            line-height: 1;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        [c-font="label"] {
-            font-family: var(--font-tech);
-            font-size: 0.8rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: var(--accent-color);
-            border: 1px solid var(--accent-color);
-            padding: 0.5em 1em;
-            display: inline-block;
-            margin-bottom: 2rem;
-        }
-
-        p { font-size: 1.1rem; line-height: 1.6; opacity: 0.8; max-width: 40ch; margin-top: 1.5rem; }
-
-        /* --- HUD GRID (Rebuilt to match Image 2) --- */
-        .hud-container {
-            margin-top: 3rem;
-            max-width: 600px;
-            border-top: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            display: grid;
-            grid-template-columns: 1fr 1fr auto; /* 2 columns for data + 1 column for vertical status pills */
-        }
-
-        .hud-cell {
-            padding: 1.5rem 2rem;
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        
-        /* Remove bottom border for last row to avoid double borders with container */
-        .hud-cell:nth-child(n+4) { border-bottom: none; }
-        
-        /* The vertical status bar on the right */
-        .hud-status-col {
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid transparent; /* spacing fix */
-        }
-        
-        .hud-status-item {
-            flex: 1;
-            padding: 0.5rem 1rem;
+        /* Preloader */
+        .loader {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
             display: flex;
             align-items: center;
             justify-content: center;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            transform: rotate(180deg);
-            font-family: var(--font-tech);
-            font-size: 0.7rem;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            border-left: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            opacity: 0.6;
-        }
-        .hud-status-item:last-child { border-bottom: none; }
-
-        .hud-lbl { 
-            font-size: 0.7rem; 
-            opacity: 0.5; 
-            letter-spacing: 0.1em; 
-            text-transform: uppercase; 
-            margin-bottom: 0.25rem;
-            font-family: var(--font-main);
-        }
-        
-        .hud-val { 
-            font-family: var(--font-tech); 
-            font-size: 2.2rem; 
-            line-height: 1; 
-            font-weight: 500; 
-            display: block; 
-        }
-        
-        .hud-unit {
-            font-size: 0.9rem;
-            margin-left: 0.2rem;
-            opacity: 0.7;
+            pointer-events: none;
+            background: rgb(var(--body));
         }
 
-        /* --- PRELOADER --- */
-        .loader {
-            position: fixed; inset: 0; z-index: 9999;
-            background: #040404;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: transform 1.2s var(--ease-venturi);
+        .loader-fill {
+            position: fixed;
+            inset: 0;
+            background: rgb(var(--body));
+            transition: transform 1s var(--ease);
+            transform-origin: top;
         }
-        .loader.hidden { transform: translateY(-100%); }
 
         .loader-data {
             position: relative;
@@ -163,7 +62,21 @@
             flex-direction: column;
             align-items: center;
             gap: 2rem;
-            transition: opacity 0.5s var(--ease-venturi);
+            transition: opacity 0.5s var(--ease);
+        }
+
+        .loader.hidden {
+            pointer-events: none;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.5s var(--ease), visibility 0.5s;
+        }
+
+        .loader.hidden .loader-fill { 
+            transform: scaleY(0); 
+        }
+        .loader.hidden .loader-data { 
+            opacity: 0; 
         }
 
         .loader-status {
@@ -179,7 +92,7 @@
 
         .loader-status span {
             display: block;
-            transition: transform 0.5s var(--ease-venturi);
+            transition: transform 0.5s var(--ease);
         }
 
         .loader-status.launching .loader-prepare { transform: translateY(-100%); }
@@ -197,106 +110,71 @@
             margin-right: 1rem;
         }
 
-        .loader-bar-group rect { 
-            fill: rgba(255,255,255,0.2); 
-            animation: pulse 0.8s infinite alternate; 
+        .loader-bars rect {
+            fill: rgba(255, 255, 255, 0.5);
+            animation: pulse 2s steps(3) infinite;
         }
-        .loader-bar-group rect:nth-child(2) { animation-delay: 0.1s; }
-        .loader-bar-group rect:nth-child(3) { animation-delay: 0.2s; }
-        .loader-bar-group rect:nth-child(4) { animation-delay: 0.3s; }
+        .loader-bars rect:nth-child(1) { animation-delay: 0.23s; }
+        .loader-bars rect:nth-child(2) { animation-delay: 0.46s; }
+        .loader-bars rect:nth-child(3) { animation-delay: 0.69s; }
         
-        @keyframes pulse { 
-            to { fill: var(--accent-color); } 
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
         }
 
-        /* --- GLOBE CONTAINER --- */
+        /* Globe Container */
         #globe-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
             opacity: 0;
-            transition: opacity 2s var(--ease-venturi);
+            transition: opacity 2s var(--ease);
             pointer-events: none;
         }
 
-        /* --- SCROLL SECTIONS --- */
-        .scroll-container {
-            position: relative;
-            z-index: 10;
-            min-height: 600vh;
-        }
-
-        .section {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 6rem 5vw;
-            position: relative;
-        }
-
-        .layout-right { align-items: flex-end; text-align: right; }
-        .layout-center { align-items: center; text-align: center; }
-
-        /* Timeline Years */
-        .year-row {
-            display: flex; align-items: baseline; gap: 3rem;
-            padding: 2rem 0; border-bottom: 1px solid var(--border-color);
-        }
-        .year { font-family: var(--font-tech); font-size: 5rem; line-height: 1; font-weight: 300; min-width: 200px; color: var(--accent-color); }
-        .desc { font-size: 1.1rem; max-width: 400px; }
-
-        /* Button */
-        .btn-v {
-            margin-top: 3rem;
-            background: var(--accent-color);
+        /* Overlay text for debugging */
+        .debug-info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
             color: white;
+            font-family: monospace;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* FPS counter */
+        #fps {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            color: rgb(var(--orange));
             font-family: var(--font-tech);
-            text-transform: uppercase;
-            font-weight: 600;
-            padding: 1rem 2rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 1rem;
-            clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%);
-            transition: transform 0.3s ease;
-            cursor: pointer;
-            pointer-events: auto;
-        }
-        .btn-v:hover { transform: translateY(-5px); }
-
-        /* NAV */
-        nav {
-            position: fixed; top: 0; width: 100%; padding: 2rem;
-            display: flex; justify-content: space-between; z-index: 100;
-            mix-blend-mode: difference; color: white;
-            pointer-events: none;
-        }
-        nav > * { pointer-events: auto; }
-        .logo { font-family: var(--font-tech); font-weight: 700; letter-spacing: 0.2em; font-size: 1.2rem; }
-
-        /* Mobile adjustment for HUD */
-        @media (max-width: 768px) {
-            .hud-container { grid-template-columns: 1fr; }
-            .hud-cell:nth-child(2) { border-right: none; }
-            .hud-status-col { display: none; } /* Hide vertical bars on mobile */
+            font-size: 14px;
         }
     </style>
 
-    <!-- THREE.js and Globe.gl -->
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    
+    <!-- THREE.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://unpkg.com/globe.gl"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- GLTFLoader -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- Improved Earth textures -->
+    <script src="https://unpkg.com/three-globe@2.31.0/dist/three-globe.min.js"></script>
 </head>
 <body>
 
-    <!-- NAV -->
-    <nav>
-        <div class="logo">VENTURI SPACE</div>
-        <div style="font-family: var(--font-tech); font-weight: 600; font-size: 0.9rem; background: white; color: black; padding: 0.5rem 1rem;">MENU</div>
-    </nav>
-
     <!-- PRELOADER -->
     <div class="loader" id="loader">
+        <div class="loader-fill"></div>
         <div class="loader-data">
             <svg class="asset loader-logo" width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10,10 L30,30 L50,10" fill="none" stroke="white" stroke-width="4"/>
@@ -304,161 +182,29 @@
             </svg>
             
             <div class="loader-status" id="loaderStatus">
-                <span class="loader-prepare" c-font="body_3">Ready for launch</span>
-                <span class="loader-ready" c-font="body_3">Take-off</span>
+                <span class="loader-prepare">Ready for launch</span>
+                <span class="loader-ready">Take-off</span>
             </div>
             
             <div class="loader-countdown">
-                <svg class="loader-bar-group" width="60" height="40">
-                    <rect x="5" y="10" width="4" height="20" />
-                    <rect x="15" y="5" width="4" height="30" />
-                    <rect x="25" y="15" width="4" height="10" />
-                    <rect x="35" y="0" width="4" height="40" />
-                    <rect x="45" y="12" width="4" height="16" />
+                <svg class="asset loader-bars" width="39" height="10" viewBox="0 0 39 10" fill="none">
+                    <rect opacity="0.2" width="1" height="10" x="38" fill="#D9D9D9"></rect>
+                    <rect opacity="0.6" width="1" height="10" x="22" fill="#D9D9D9"></rect>
+                    <rect opacity="0.3" width="2" height="10" x="26" fill="#D9D9D9"></rect>
+                    <rect opacity="0.8" width="3" height="10" x="8" fill="#D9D9D9"></rect>
+                    <rect opacity="0.1" width="4" height="10" x="34" fill="#D9D9D9"></rect>
                 </svg>
                 <span class="loader-time" id="loaderTime">00:10:00</span>
             </div>
         </div>
     </div>
 
+    <!-- DEBUG INFO -->
+    <div class="debug-info" id="debugInfo"></div>
+    <div id="fps">FPS: 60</div>
+
     <!-- GLOBE CONTAINER -->
     <div id="globe-container"></div>
-
-    <!-- SCROLL CONTENT -->
-    <div class="scroll-container">
-        
-        <!-- 1. INTRO (3D: Satellite in Deep Space) -->
-        <section class="section" id="s1">
-            <div style="margin-top: auto;">
-                <div c-font="label">Phase 01</div>
-                <h1 c-font="yell_1">Orbital<br>Injection</h1>
-                <p>The Sentinel satellite stabilizes in high Earth orbit. Systems diagnostic complete. Establishing downlink.</p>
-            </div>
-        </section>
-
-        <!-- 2. VENTURI HISTORY (Standard Layout / Light Mode) -->
-        <section class="section" id="s2">
-            <div style="max-width: 800px; margin: 0 auto; width: 100%;">
-                <div c-font="label" style="margin-bottom: 4rem;">Legacy</div>
-                
-                <div class="year-row">
-                    <div class="year">2000</div>
-                    <div class="desc">Monegasque entrepreneur Gildo Pastor bought French carmaker Venturi.</div>
-                </div>
-                <div class="year-row">
-                    <div class="year">26</div>
-                    <div class="desc">World speed records with two and four wheel vehicles.</div>
-                </div>
-                <div class="year-row">
-                    <div class="year">549</div>
-                    <div class="desc">The Venturi VBB-3 is the fastest electric vehicle in history (km/h).</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 3. EARTH OBSERVATION (3D: Earth Globe) -->
-        <section class="section layout-right" id="s3">
-            <div style="max-width: 600px;">
-                <div c-font="label">Global Scan</div>
-                <h1 c-font="yell_1" style="font-size: clamp(3rem, 8vw, 8rem);">Earth<br>View</h1>
-                <p style="margin-left: auto;">Visual contact established. Rotating sensors to Earth-facing vector. Population density map overlay active.</p>
-                
-                <!-- HUD GRID: EARTH VARIANT -->
-                <div class="hud-container" style="margin-left: auto;">
-                    <!-- Row 1 -->
-                    <div class="hud-cell">
-                        <span class="hud-lbl">ALTITUDE</span>
-                        <span class="hud-val">400<span class="hud-unit">KM</span></span>
-                    </div>
-                    <div class="hud-cell">
-                        <span class="hud-lbl">VELOCITY</span>
-                        <span class="hud-val">7.66<span class="hud-unit">KM/S</span></span>
-                    </div>
-                    
-                    <!-- Row 2 -->
-                    <div class="hud-cell">
-                        <span class="hud-lbl">INCLINATION</span>
-                        <span class="hud-val">51.6<span class="hud-unit">DEG</span></span>
-                    </div>
-                    <div class="hud-cell">
-                        <span class="hud-lbl">PERIOD</span>
-                        <span class="hud-val">92.6<span class="hud-unit">MIN</span></span>
-                    </div>
-
-                    <!-- Vertical Status Column -->
-                    <div class="hud-status-col">
-                        <div class="hud-status-item">DAY 102</div>
-                        <div class="hud-status-item">LEO</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. ANALYSIS -->
-        <section class="section" id="s4">
-            <div class="content-box">
-                <span class="label">Analysis</span>
-                <h2 c-font="title_2">Population Density</h2>
-                <p>Hex-bin aggregation reveals human activity clusters. Thermal signatures correlate with energy consumption.</p>
-            </div>
-        </section>
-
-        <!-- 5. BANGLADESH ZOOM -->
-        <section class="section layout-right" id="s5">
-            <div style="max-width: 600px;">
-                <div c-font="label">Target Acquired</div>
-                <h1 c-font="title_2">Dhaka, Bangladesh</h1>
-                <p>Precision coordinates locked. High-resolution scanning initiated at 23.68° N, 90.35° E.</p>
-            </div>
-        </section>
-
-        <!-- 6. TRANSITION TEXT (Standard Layout) -->
-        <section class="section layout-center" id="s6">
-            <h1 c-font="title_2" style="max-width: 900px;">"Space has changed, but spacecraft haven't. We need a better vehicle for this modern domain."</h1>
-            <div class="btn-v">Our Technology <span>→</span></div>
-        </section>
-
-        <!-- 7. MOON ARRIVAL (3D: Moon Globe) -->
-        <section class="section" id="s7">
-            <div>
-                <h1 c-font="title_2">Exploring The<br>Lunar South Pole</h1>
-                
-                <!-- HUD GRID: MOON VARIANT (Matches Reference Image) -->
-                <div class="hud-container">
-                    <!-- Row 1 -->
-                    <div class="hud-cell">
-                        <span class="hud-lbl">DIAMETER ~</span>
-                        <span class="hud-val">3 474<span class="hud-unit">KM</span></span>
-                    </div>
-                    <div class="hud-cell">
-                        <span class="hud-lbl">GRAVITY</span>
-                        <span class="hud-val">1.62<span class="hud-unit">m/s²</span></span>
-                    </div>
-                    
-                    <!-- Row 2 -->
-                    <div class="hud-cell">
-                        <span class="hud-lbl">DENSITY</span>
-                        <span class="hud-val">3 344<span class="hud-unit">kg/m³</span></span>
-                    </div>
-                    <div class="hud-cell">
-                        <span class="hud-lbl">INCLINATION</span>
-                        <span class="hud-val">6.68<span class="hud-unit">deg</span></span>
-                    </div>
-
-                    <!-- Vertical Status Column -->
-                    <div class="hud-status-col">
-                        <div class="hud-status-item">DAY 340</div>
-                        <div class="hud-status-item">PHASE -3</div>
-                    </div>
-                </div>
-
-                <p>Ice hidden deep in the craters. Exceptional levels of sunlight. The Moon's South Pole is a land of opportunity.</p>
-                <div class="btn-v">Start Mission <span>→</span></div>
-            </div>
-        </section>
-
-        <div style="height: 50vh;"></div>
-    </div>
 
     <script>
         // Register GSAP plugins
@@ -468,7 +214,10 @@
         const loaderEl = document.getElementById('loader');
         const loaderStatus = document.getElementById('loaderStatus');
         const loaderTime = document.getElementById('loaderTime');
-        let timeLeft = 3.0; // Reduced to 3 seconds for better UX
+        const debugInfo = document.getElementById('debugInfo');
+        const fpsElement = document.getElementById('fps');
+        
+        let timeLeft = 3.0;
         
         const timerInterval = setInterval(() => {
             timeLeft -= 0.1;
@@ -488,335 +237,492 @@
             setTimeout(() => {
                 loaderEl.classList.add('hidden');
                 document.getElementById('globe-container').style.opacity = 1;
-                initExperience();
+                initScene();
             }, 1000);
         }
 
-        // --- GLOBE SETUP ---
-        const container = document.getElementById('globe-container');
-        
-        // Generate population data for hex bins
-        const N = 800;
-        const populationData = [...Array(N).keys()].map(() => ({
-            lat: (Math.random() - 0.5) * 160,
-            lng: (Math.random() - 0.5) * 360,
-            pop: Math.random()
-        }));
+        // --- MAIN SCENE SETUP ---
+        let scene, camera, renderer, controls;
+        let satelliteModel = null;
+        let earthGlobe = null;
+        let stars = null;
+        let frameCount = 0;
+        let lastTime = performance.now();
+        let fps = 60;
 
-        // Create Earth Globe with realistic textures
-        const earthGlobe = Globe()
-            .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-            .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
-            .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
-            .showAtmosphere(true)
-            .atmosphereColor('rgba(60, 100, 255, 0.8)')
-            .atmosphereAltitude(0.15)
-            .hexBinPointsData([])
-            .hexBinPointWeight('pop')
-            .hexBinResolution(4)
-            .hexMargin(0.2)
-            .hexTopColor(() => '#ff3509')
-            .hexSideColor(() => 'rgba(255, 53, 9, 0.6)')
-            .hexAltitude(d => d.sumWeight * 0.1)
-            (container);
+        function initScene() {
+            const container = document.getElementById('globe-container');
+            
+            // Create scene with proper dark space background
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.0005);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+            camera.position.set(0, 0, 1000); // Start far away
+            
+            // Create renderer with proper settings
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setClearColor(0x000000, 1);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 0.8;
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            container.appendChild(renderer.domElement);
+            
+            // Create orbit controls (for debugging, will be disabled for production)
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = true;
+            controls.enablePan = false;
+            controls.enableRotate = true;
+            controls.autoRotate = false;
+            controls.maxDistance = 2000;
+            controls.minDistance = 100;
 
-        // Access Three.js internals
-        const scene = earthGlobe.scene();
-        const camera = earthGlobe.camera();
-        const renderer = earthGlobe.renderer();
-        const controls = earthGlobe.controls();
+            // --- CREATE REALISTIC STARFIELD ---
+            createStarfield();
+            
+            // --- LOAD SATELLITE FIRST ---
+            loadSatellite();
+            
+            // --- CREATE EARTH (will be added later) ---
+            createEarth();
+            
+            // --- LIGHTING SETUP ---
+            setupLighting();
+            
+            // Start animation
+            animate();
+            
+            // Handle resize
+            window.addEventListener('resize', onWindowResize);
+        }
 
-        // Disable default controls for scroll-driven animation
-        controls.enableZoom = false;
-        controls.enablePan = false;
-        controls.enableRotate = false;
-        controls.autoRotate = false;
-
-        // Set initial camera position
-        camera.position.set(0, 0, 450);
-
-        // Configure renderer
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setClearColor(0x040404);
-
-        // Add custom lighting
-        const THREE = window.THREE;
-        
-        // Orange accent light (Venturi style)
-        const orangeLight = new THREE.PointLight(0xff3509, 1.5, 800);
-        orangeLight.position.set(150, -100, 200);
-        scene.add(orangeLight);
-
-        // White fill light
-        const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        fillLight.position.set(100, 100, 200);
-        scene.add(fillLight);
-
-        // Create Satellite Group
-        const satGroup = new THREE.Group();
-        scene.add(satGroup);
-
-        // Create a placeholder satellite (will be replaced by GLB if available)
-        function createPlaceholderSatellite() {
-            // Clear any existing children
-            while(satGroup.children.length > 0) {
-                satGroup.remove(satGroup.children[0]);
+        function createStarfield() {
+            const starCount = 5000;
+            const starGeometry = new THREE.BufferGeometry();
+            const starPositions = new Float32Array(starCount * 3);
+            const starSizes = new Float32Array(starCount);
+            const starColors = new Float32Array(starCount * 3);
+            
+            for (let i = 0; i < starCount; i++) {
+                // Position stars in a sphere around the scene
+                const radius = 3000 + Math.random() * 2000;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                
+                starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+                starPositions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                starPositions[i * 3 + 2] = radius * Math.cos(phi);
+                
+                // Random sizes with some variation
+                starSizes[i] = 0.5 + Math.random() * 2.5;
+                
+                // Slight color variation (mostly white with hints of blue/orange)
+                const colorVariation = Math.random() * 0.3;
+                starColors[i * 3] = 1.0 - colorVariation;
+                starColors[i * 3 + 1] = 1.0 - colorVariation * 0.5;
+                starColors[i * 3 + 2] = 1.0 - colorVariation;
             }
             
-            // Main body
-            const satBody = new THREE.Mesh(
-                new THREE.BoxGeometry(4, 4, 8),
-                new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.2, metalness: 0.9 })
-            );
-            satGroup.add(satBody);
-
-            // Solar panels
-            const panelMat = new THREE.MeshStandardMaterial({ 
-                color: 0x111111, 
-                roughness: 0.4, 
-                metalness: 0.9,
-                side: THREE.DoubleSide
+            starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+            starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+            starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+            
+            const starMaterial = new THREE.PointsMaterial({
+                size: 1.5,
+                sizeAttenuation: true,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8
             });
-            const leftPanel = new THREE.Mesh(new THREE.PlaneGeometry(24, 6), panelMat);
-            leftPanel.position.set(-12, 0, 0);
-            leftPanel.rotation.y = Math.PI / 2;
-            satGroup.add(leftPanel);
-
-            const rightPanel = new THREE.Mesh(new THREE.PlaneGeometry(24, 6), panelMat);
-            rightPanel.position.set(12, 0, 0);
-            rightPanel.rotation.y = Math.PI / 2;
-            satGroup.add(rightPanel);
-
-            // Antenna dish
-            const dish = new THREE.Mesh(
-                new THREE.ConeGeometry(3, 5, 16),
-                new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.7, roughness: 0.3 })
-            );
-            dish.position.set(0, 5, 0);
-            satGroup.add(dish);
+            
+            stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
         }
 
-        // Load GLB satellite model if available
-        function loadGLBSatellite() {
-            // Create a GLTFLoader
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-            script.onload = () => {
-                const GLTFLoader = THREE.GLTFLoader || (window.THREE && window.THREE.GLTFLoader);
-                if (GLTFLoader) {
-                    const loader = new GLTFLoader();
-                    // Try to load the sentinel.glb from assets folder
-                    loader.load(
-                        './assets/sentinel.glb',
-                        (gltf) => {
-                            console.log('Satellite GLB loaded successfully');
-                            const model = gltf.scene;
+        function loadSatellite() {
+            const loader = new THREE.GLTFLoader();
+            
+            loader.load(
+                './assets/sentinel.glb',
+                (gltf) => {
+                    console.log('Satellite GLB loaded successfully');
+                    
+                    satelliteModel = gltf.scene;
+                    
+                    // Scale and position
+                    satelliteModel.scale.set(10, 10, 10);
+                    satelliteModel.position.set(200, 100, 300);
+                    satelliteModel.rotation.set(0, Math.PI, 0);
+                    
+                    // Traverse and enhance materials
+                    satelliteModel.traverse((child) => {
+                        if (child.isMesh) {
+                            // Enable shadows
+                            child.castShadow = true;
+                            child.receiveShadow = true;
                             
-                            // Clear placeholder
-                            while(satGroup.children.length > 0) {
-                                satGroup.remove(satGroup.children[0]);
+                            // Enhance materials
+                            if (child.material) {
+                                // Make materials more metallic and reflective
+                                child.material.metalness = 0.9;
+                                child.material.roughness = 0.2;
+                                child.material.envMapIntensity = 1.5;
+                                
+                                // Add emissive for glint effect
+                                child.material.emissive = new THREE.Color(0x111111);
+                                child.material.emissiveIntensity = 0.1;
+                                
+                                // Add subtle sheen
+                                child.material.sheen = 0.5;
+                                child.material.sheenRoughness = 0.3;
+                                child.material.sheenColor = new THREE.Color(0xff3509);
                             }
-                            
-                            // Scale and position the model
-                            model.scale.set(5, 5, 5);
-                            model.rotation.set(0, Math.PI, 0); // Adjust orientation if needed
-                            
-                            // Apply Venturi-style materials
-                            model.traverse((child) => {
-                                if (child.isMesh) {
-                                    // Enhance materials for better appearance
-                                    if (child.material) {
-                                        child.material.metalness = 0.8;
-                                        child.material.roughness = 0.3;
-                                        
-                                        // Apply Venturi orange to certain parts
-                                        if (child.name.includes('body') || child.name.includes('main')) {
-                                            child.material.color.set(0xffaa00);
-                                        }
-                                    }
-                                }
-                            });
-                            
-                            satGroup.add(model);
-                        },
-                        (xhr) => {
-                            // Loading progress
-                            console.log(`Satellite model loading: ${(xhr.loaded / xhr.total * 100)}%`);
-                        },
-                        (error) => {
-                            console.error('Error loading satellite GLB:', error);
-                            // Fallback to placeholder
-                            createPlaceholderSatellite();
                         }
-                    );
-                } else {
-                    console.log('GLTFLoader not available, using placeholder');
-                    createPlaceholderSatellite();
+                    });
+                    
+                    scene.add(satelliteModel);
+                    debugInfo.textContent = 'Satellite loaded ✓';
+                    
+                    // Start camera animation around satellite
+                    animateCameraToSatellite();
+                },
+                (xhr) => {
+                    const percent = (xhr.loaded / xhr.total * 100).toFixed(2);
+                    debugInfo.textContent = `Loading satellite: ${percent}%`;
+                },
+                (error) => {
+                    console.error('Error loading satellite GLB:', error);
+                    debugInfo.textContent = 'Error loading satellite';
+                    createFallbackSatellite();
                 }
-            };
-            script.onerror = () => {
-                console.log('Failed to load GLTFLoader, using placeholder');
-                createPlaceholderSatellite();
-            };
-            document.head.appendChild(script);
+            );
         }
 
-        // Initialize satellite
-        loadGLBSatellite();
+        function createFallbackSatellite() {
+            console.log('Creating fallback satellite');
+            
+            const group = new THREE.Group();
+            
+            // Main body (gold/orange venturi color)
+            const bodyGeometry = new THREE.BoxGeometry(8, 8, 16);
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+                color: 0xff5500,
+                metalness: 0.95,
+                roughness: 0.1,
+                emissive: 0x222200,
+                emissiveIntensity: 0.2
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            group.add(body);
+            
+            // Solar panels
+            const panelGeometry = new THREE.BoxGeometry(40, 0.5, 30);
+            const panelMaterial = new THREE.MeshStandardMaterial({
+                color: 0x111133,
+                metalness: 0.8,
+                roughness: 0.3,
+                emissive: 0x000022,
+                emissiveIntensity: 0.1
+            });
+            
+            const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+            leftPanel.position.set(-25, 0, 0);
+            leftPanel.castShadow = true;
+            group.add(leftPanel);
+            
+            const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+            rightPanel.position.set(25, 0, 0);
+            rightPanel.castShadow = true;
+            group.add(rightPanel);
+            
+            // Antenna dish
+            const dishGeometry = new THREE.ConeGeometry(6, 10, 16);
+            const dishMaterial = new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+            const dish = new THREE.Mesh(dishGeometry, dishMaterial);
+            dish.position.set(0, 12, 0);
+            dish.rotation.x = Math.PI;
+            dish.castShadow = true;
+            group.add(dish);
+            
+            satelliteModel = group;
+            satelliteModel.position.set(200, 100, 300);
+            satelliteModel.rotation.set(0.3, 0.8, 0.2);
+            scene.add(satelliteModel);
+            
+            debugInfo.textContent = 'Fallback satellite created ✓';
+            
+            // Start camera animation
+            animateCameraToSatellite();
+        }
 
-        // Set initial position
-        satGroup.position.set(80, 50, 200);
-        satGroup.rotation.set(0.3, 0.8, 0.2);
-
-        // State tracking
-        let currentPhase = 'earth';
-        let hexDataVisible = false;
-
-        // --- SCROLL ANIMATION ---
-        function initExperience() {
-            const masterTl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: ".scroll-container",
-                    start: "top top",
-                    end: "bottom bottom",
-                    scrub: 1.2,
-                    onUpdate: (self) => {
-                        updateHUD(self.progress);
+        function createEarth() {
+            // Create Earth with three-globe for better realism
+            earthGlobe = Globe()
+                .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+                .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+                .showAtmosphere(true)
+                .atmosphereColor('rgba(100, 150, 255, 0.3)')
+                .atmosphereAltitude(0.15)
+                .globeMaterial(new THREE.MeshStandardMaterial({
+                    roughness: 0.8,
+                    metalness: 0.2,
+                    bumpScale: 2
+                }));
+            
+            // Get the Three.js objects from globe.gl
+            const earthObject = earthGlobe;
+            
+            // Position Earth far away initially
+            earthObject.position.set(-500, 0, -1000);
+            earthObject.scale.set(150, 150, 150);
+            
+            // Enhance Earth materials
+            earthObject.traverse((child) => {
+                if (child.isMesh) {
+                    child.receiveShadow = true;
+                    if (child.material) {
+                        child.material.envMapIntensity = 0.5;
                     }
                 }
             });
-
-            // SECTION 1: Initial view
-            masterTl.to(camera.position, {
-                z: 280,
-                duration: 2,
-                ease: "power2.out"
-            }, 0)
-            .to(satGroup.position, {
-                x: 40, y: 30, z: 150,
-                duration: 2
-            }, 0)
-            .to(satGroup.rotation, {
-                y: Math.PI * 0.5,
-                duration: 2
-            }, 0);
-
-            // SECTION 2: Light Mode / History
-            masterTl.call(() => document.body.classList.add('light-mode'), null, 2)
-            .to("#globe-container", { opacity: 0.1, duration: 1 }, 2);
-
-            // SECTION 3: Dark Mode / Earth Observation
-            masterTl.call(() => document.body.classList.remove('light-mode'), null, 4)
-            .to("#globe-container", { opacity: 1, duration: 1 }, 4)
-            .to(camera.position, {
-                x: 50, y: 0, z: 220,
-                duration: 3
-            }, 4)
-            .to(earthGlobe.rotation, {
-                y: 2.5,
-                duration: 3
-            }, 4)
-            .to(satGroup.position, {
-                x: -40, y: 10, z: 120,
-                duration: 3
-            }, 4);
-
-            // SECTION 4: Show population data
-            masterTl.call(() => {
-                earthGlobe.hexBinPointsData(populationData);
-                hexDataVisible = true;
-            }, null, 7);
-
-            // SECTION 5: Zoom to Bangladesh
-            masterTl.call(() => {
-                earthGlobe.hexBinPointsData([]);
-                hexDataVisible = false;
-                earthGlobe.pointOfView({ lat: 23.68, lng: 90.35, altitude: 0.8 }, 2000);
-            }, null, 9)
-            .to(camera.position, {
-                z: 180,
-                duration: 2
-            }, 9)
-            .to(satGroup.position, {
-                x: -30, y: 60, z: 140,
-                duration: 2
-            }, 9);
-
-            // SECTION 6: Transition text (dim scene)
-            masterTl.to("#globe-container", { opacity: 0.3, duration: 2 }, 11);
-
-            // SECTION 7: Moon Reveal
-            masterTl.call(() => {
-                // Switch to Moon texture
-                earthGlobe
-                    .globeImageUrl('https://unpkg.com/three-globe/example/img/moon.jpg')
-                    .bumpImageUrl('https://unpkg.com/three-globe/example/img/moon-topology.png')
-                    .showAtmosphere(false);
-                earthGlobe.pointOfView({ lat: -85, lng: 0, altitude: 1.5 }, 3000);
-                currentPhase = 'moon';
-            }, null, 13)
-            .to("#globe-container", { opacity: 1, duration: 2 }, 13)
-            .to(camera.position, {
-                z: 280,
-                duration: 3
-            }, 13)
-            .to(satGroup.position, {
-                x: -40, y: -20, z: 160,
-                duration: 3
-            }, 13)
-            .to(satGroup.rotation, {
+            
+            scene.add(earthObject);
+            
+            // Add a subtle rotation animation
+            const earthRotation = { y: 0 };
+            gsap.to(earthRotation, {
                 y: Math.PI * 2,
-                z: 0.5,
-                duration: 3
-            }, 13);
-        }
-
-        // Update HUD based on scroll progress
-        function updateHUD(progress) {
-            const altitude = Math.round(400 - progress * 380 + (currentPhase === 'moon' ? 384400 : 0));
-            const velocity = (7.66 + progress * 3.34).toFixed(2);
-            
-            // Update altitude display if HUD is present
-            const altitudeElements = document.querySelectorAll('.hud-val');
-            if (altitudeElements.length > 0) {
-                // Update first HUD value (typically altitude)
-                const altitudeDisplay = altitudeElements[0];
-                altitudeDisplay.innerHTML = currentPhase === 'moon' ? 
-                    `${altitude.toLocaleString()}<span class="hud-unit">KM</span>` : 
-                    `${altitude}<span class="hud-unit">KM</span>`;
-            }
-        }
-
-        // Animate satellite
-        function animateSatellite() {
-            const time = Date.now() * 0.001;
-            
-            // Subtle floating motion
-            satGroup.position.y += Math.sin(time * 0.5) * 0.02;
-            satGroup.rotation.y += 0.002;
-            satGroup.rotation.z = Math.sin(time * 0.3) * 0.1;
-            
-            // Rotate panels if they exist
-            satGroup.children.forEach((child) => {
-                if (child.isMesh && child.geometry.type === 'PlaneGeometry') {
-                    child.rotation.z = Math.sin(time * 0.2) * 0.05;
+                duration: 120,
+                repeat: -1,
+                ease: "none",
+                onUpdate: () => {
+                    earthObject.rotation.y = earthRotation.y;
                 }
             });
-
-            requestAnimationFrame(animateSatellite);
+            
+            debugInfo.textContent += ' | Earth created ✓';
         }
-        animateSatellite();
 
-        // Handle resize
-        window.addEventListener('resize', () => {
-            earthGlobe.width(window.innerWidth);
-            earthGlobe.height(window.innerHeight);
+        function setupLighting() {
+            // Clear any existing lights
+            scene.children.forEach(child => {
+                if (child.isLight) {
+                    scene.remove(child);
+                }
+            });
+            
+            // Main sun light (directional, simulating sunlight)
+            const sunLight = new THREE.DirectionalLight(0xffffff, 2);
+            sunLight.position.set(500, 300, 500);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 1000;
+            sunLight.shadow.camera.left = -100;
+            sunLight.shadow.camera.right = 100;
+            sunLight.shadow.camera.top = 100;
+            sunLight.shadow.camera.bottom = -100;
+            scene.add(sunLight);
+            
+            // Fill light (ambient, very subtle)
+            const fillLight = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(fillLight);
+            
+            // Back light for rim lighting
+            const backLight = new THREE.DirectionalLight(0x4466ff, 0.5);
+            backLight.position.set(-500, -200, -500);
+            scene.add(backLight);
+            
+            // Venturi orange accent light (very subtle)
+            const orangeLight = new THREE.PointLight(0xff3509, 0.8, 1000);
+            orangeLight.position.set(300, 200, 400);
+            scene.add(orangeLight);
+            
+            // Add lens flare effect for star glints
+            const lensFlare = new THREE.PointLight(0xffffff, 0.5, 2000);
+            lensFlare.position.set(-1000, 800, -1500);
+            scene.add(lensFlare);
+        }
+
+        function animateCameraToSatellite() {
+            if (!satelliteModel) return;
+            
+            // Camera animation sequence
+            const tl = gsap.timeline();
+            
+            // Start: Camera far away, looking at satellite
+            camera.position.set(0, 0, 1000);
+            camera.lookAt(satelliteModel.position);
+            
+            // Sequence 1: Slow approach to satellite
+            tl.to(camera.position, {
+                x: 100,
+                y: 50,
+                z: 400,
+                duration: 4,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    camera.lookAt(satelliteModel.position);
+                }
+            })
+            
+            // Sequence 2: Orbit around satellite
+            .to(camera.position, {
+                x: -150,
+                y: 80,
+                z: 350,
+                duration: 6,
+                ease: "sine.inOut",
+                onUpdate: () => {
+                    camera.lookAt(satelliteModel.position);
+                }
+            })
+            
+            // Sequence 3: Pull back to reveal Earth
+            .to(camera.position, {
+                x: 0,
+                y: 0,
+                z: 800,
+                duration: 5,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    camera.lookAt(satelliteModel.position);
+                },
+                onComplete: () => {
+                    // Now pan to Earth
+                    animateCameraToEarth();
+                }
+            });
+        }
+
+        function animateCameraToEarth() {
+            if (!earthGlobe) return;
+            
+            const tl = gsap.timeline();
+            
+            // Move camera to view both satellite and Earth
+            tl.to(camera.position, {
+                x: 300,
+                y: 150,
+                z: 600,
+                duration: 5,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    // Look between satellite and Earth
+                    const lookAtPosition = new THREE.Vector3();
+                    lookAtPosition.lerpVectors(
+                        satelliteModel.position,
+                        earthGlobe.position,
+                        0.7
+                    );
+                    camera.lookAt(lookAtPosition);
+                }
+            })
+            
+            // Focus on Earth
+            .to(camera.position, {
+                x: 0,
+                y: 0,
+                z: 400,
+                duration: 6,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    camera.lookAt(earthGlobe.position);
+                }
+            });
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const currentTime = performance.now();
+            const deltaTime = currentTime - lastTime;
+            frameCount++;
+            
+            // Update FPS counter every second
+            if (deltaTime >= 1000) {
+                fps = Math.round((frameCount * 1000) / deltaTime);
+                fpsElement.textContent = `FPS: ${fps}`;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+            
+            // Update controls
+            if (controls) {
+                controls.update();
+            }
+            
+            // Animate satellite if it exists
+            if (satelliteModel) {
+                const time = performance.now() * 0.001;
+                
+                // Subtle floating animation
+                satelliteModel.position.y += Math.sin(time * 0.5) * 0.05;
+                
+                // Slow rotation
+                satelliteModel.rotation.y += 0.002;
+                satelliteModel.rotation.x = Math.sin(time * 0.3) * 0.05;
+                
+                // Solar panel subtle movement
+                satelliteModel.traverse((child) => {
+                    if (child.name && child.name.includes('panel')) {
+                        child.rotation.z = Math.sin(time * 0.2 + child.position.x * 0.01) * 0.02;
+                    }
+                });
+                
+                // Glint effect on metallic parts
+                satelliteModel.traverse((child) => {
+                    if (child.isMesh && child.material && child.material.emissive) {
+                        const glint = Math.sin(time * 2 + child.position.x * 0.1) * 0.1 + 0.1;
+                        child.material.emissiveIntensity = glint;
+                    }
+                });
+            }
+            
+            // Animate stars (subtle twinkle)
+            if (stars) {
+                const time = performance.now() * 0.0005;
+                stars.rotation.y += 0.0001;
+                
+                // Update star sizes for twinkling effect
+                const sizes = stars.geometry.attributes.size;
+                for (let i = 0; i < sizes.count; i++) {
+                    const twinkle = Math.sin(time + i * 0.1) * 0.3 + 0.7;
+                    sizes.array[i] = (0.5 + Math.random() * 2.5) * twinkle;
+                }
+                sizes.needsUpdate = true;
+            }
+            
+            // Render
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-        });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-        // Initialize with placeholder while GLB loads
-        createPlaceholderSatellite();
+        // Handle resize
+        window.addEventListener('resize', onWindowResize);
 
     </script>
 </body>
