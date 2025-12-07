@@ -5,26 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Venturi Space | Mission Control</title>
     
-    <!-- Fonts - Using Google Fonts proxies for Supermolot/Suisse -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* --- EXTRACTED VENTURI CSS & VARIABLES --- */
         :root {
             --black: 4, 4, 4;
             --body: 4, 4, 4;
             --text: 244, 244, 244;
             --white: 255, 255, 255;
-            --orange: 255, 53, 9; /* Venturi Orange */
+            --orange: 255, 53, 9;
             --grey: 26, 26, 26;
-            --gutter: 2rem;
-            --flux_large: 140rem;
             --ease: cubic-bezier(0.25, 0, 0.25, 1);
-            --font-display: 'Barlow', sans-serif; /* Proxy for Suisse */
-            --font-tech: 'Rajdhani', sans-serif; /* Proxy for Supermolot */
+            --font-display: 'Barlow', sans-serif;
+            --font-tech: 'Rajdhani', sans-serif;
         }
 
         body {
@@ -35,9 +32,10 @@
             overflow-x: hidden;
             font-family: var(--font-display);
             -webkit-font-smoothing: antialiased;
+            overflow-y: auto;
+            height: 100%;
         }
 
-        /* --- TYPOGRAPHY UTILITIES (c-font) --- */
         [c-font*="yell_1"] {
             font-family: var(--font-tech);
             font-size: clamp(3rem, 8vw, 12.5rem);
@@ -54,19 +52,12 @@
             font-weight: 600;
         }
 
-        [c-font*="label_1"] {
-            font-family: var(--font-tech);
-            font-size: 1.5rem;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-        }
-
         [c-font*="body_3"] {
             font-size: 1.3rem;
             line-height: 1.25;
         }
 
-        /* --- PRELOADER STYLES (Exact Replica) --- */
+        /* Preloader */
         .loader {
             position: fixed;
             inset: 0;
@@ -74,7 +65,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            pointer-events: none; /* Allow click through after */
+            pointer-events: none;
+            background: rgb(var(--body));
         }
 
         .loader-fill {
@@ -95,8 +87,19 @@
             transition: opacity 0.5s var(--ease);
         }
 
-        .loader.hidden .loader-fill { transform: scaleY(0); }
-        .loader.hidden .loader-data { opacity: 0; }
+        .loader.hidden {
+            pointer-events: none;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.5s var(--ease), visibility 0.5s;
+        }
+
+        .loader.hidden .loader-fill { 
+            transform: scaleY(0); 
+        }
+        .loader.hidden .loader-data { 
+            opacity: 0; 
+        }
 
         .loader-status {
             font-family: var(--font-tech);
@@ -114,7 +117,6 @@
             transition: transform 0.5s var(--ease);
         }
 
-        /* Logic for swapping text */
         .loader-status.launching .loader-prepare { transform: translateY(-100%); }
         .loader-status.launching .loader-ready { transform: translateY(-100%); }
 
@@ -134,7 +136,6 @@
             fill: rgba(255, 255, 255, 0.5);
             animation: pulse 2s steps(3) infinite;
         }
-        /* Staggered pulse from CSS file */
         .loader-bars rect:nth-child(1) { animation-delay: 0.23s; }
         .loader-bars rect:nth-child(2) { animation-delay: 0.46s; }
         .loader-bars rect:nth-child(3) { animation-delay: 0.69s; }
@@ -144,28 +145,32 @@
             50% { opacity: 0.2; }
         }
 
-        /* --- 3D CONTAINER --- */
-        #scene-container {
+        /* Globe Container */
+        #globe-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
             opacity: 0;
             transition: opacity 2s var(--ease);
+            pointer-events: none;
         }
 
-        /* --- SCROLL SECTIONS --- */
+        /* Scroll Sections */
         .scroll-container {
             position: relative;
             z-index: 10;
+            min-height: 600vh;
         }
 
         .section {
-            height: 150vh; /* Scrubbing space */
+            height: 100vh;
             display: flex;
             align-items: center;
             padding: 0 10%;
             position: relative;
-            pointer-events: none; /* Let clicks pass to canvas */
+            pointer-events: none;
+            position: sticky;
+            top: 0;
         }
 
         .content-box {
@@ -193,9 +198,15 @@
             letter-spacing: 0.1em;
         }
 
-        p { opacity: 0.7; max-width: 40ch; margin-top: 1rem; font-size: 1.1rem; line-height: 1.5; }
+        p { 
+            opacity: 0.7; 
+            max-width: 40ch; 
+            margin-top: 1rem; 
+            font-size: 1.1rem; 
+            line-height: 1.5; 
+        }
 
-        /* HUD Elements */
+        /* HUD */
         .coords-hud {
             position: fixed;
             bottom: 3rem;
@@ -205,37 +216,96 @@
             z-index: 20;
             opacity: 0;
             transition: opacity 1s var(--ease);
+            pointer-events: none;
         }
-        .coords-hud h4 { color: rgb(var(--orange)); text-transform: uppercase; letter-spacing: 2px; }
-        .coords-hud span { font-size: 2rem; font-weight: 600; display: block; }
+        .coords-hud h4 { 
+            color: rgb(var(--orange)); 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            font-size: 0.8rem; 
+            margin: 0 0 0.5rem 0;
+        }
+        .coords-hud span { 
+            font-size: 2rem; 
+            font-weight: 600; 
+            display: block; 
+        }
 
+        /* Mission Stats */
+        .mission-stats {
+            position: fixed;
+            top: 3rem;
+            left: 3rem;
+            font-family: var(--font-tech);
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 1s var(--ease);
+            pointer-events: none;
+        }
+        .mission-stats.visible { 
+            opacity: 1; 
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            background: rgb(var(--orange));
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            color: rgb(var(--orange));
+            font-family: var(--font-tech);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 1s var(--ease);
+            pointer-events: none;
+        }
+
+        .scroll-indicator.visible {
+            opacity: 0.7;
+        }
     </style>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-                "three-globe": "https://unpkg.com/three-globe@2.31.0/dist/three-globe.module.js",
-                "gsap": "https://unpkg.com/gsap@3.12.5/index.js",
-                "gsap/ScrollTrigger": "https://unpkg.com/gsap@3.12.5/ScrollTrigger.js"
-            }
-        }
-    </script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    
+    <!-- Globe.gl -->
+    <script src="https://unpkg.com/globe.gl"></script>
+    <!-- THREE.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <!-- PRELOADER (Venturi Style) -->
-    <div class="loader">
+    <!-- PRELOADER -->
+    <div class="loader" id="loader">
         <div class="loader-fill"></div>
         <div class="loader-data">
-            <!-- Simplified Logo SVG -->
             <svg class="asset loader-logo" width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10,10 L30,30 L50,10" fill="none" stroke="white" stroke-width="4"/>
-                <rect x="60" y="10" width="130" height="20" fill="white" opacity="0.2"/>
+                <text x="60" y="28" fill="white" font-family="Rajdhani" font-size="18" font-weight="600">VENTURI SPACE</text>
             </svg>
             
-            <div class="loader-status">
+            <div class="loader-status" id="loaderStatus">
                 <span class="loader-prepare" c-font="body_3">Ready for launch</span>
                 <span class="loader-ready" c-font="body_3">Take-off</span>
             </div>
@@ -248,15 +318,34 @@
                     <rect opacity="0.8" width="3" height="10" x="8" fill="#D9D9D9"></rect>
                     <rect opacity="0.1" width="4" height="10" x="34" fill="#D9D9D9"></rect>
                 </svg>
-                <span class="loader-time">00:10:00</span>
+                <span class="loader-time" id="loaderTime">00:10:00</span>
             </div>
         </div>
     </div>
 
-    <!-- 3D SCENE -->
-    <div id="scene-container"></div>
+    <!-- GLOBE CONTAINER -->
+    <div id="globe-container"></div>
 
-    <!-- HUD -->
+    <!-- SCROLL INDICATOR -->
+    <div class="scroll-indicator" id="scrollIndicator">Scroll to explore mission</div>
+
+    <!-- MISSION STATS HUD -->
+    <div class="mission-stats" id="mission-stats">
+        <div class="stat-item">
+            <span class="stat-dot"></span>
+            <span>MISSION: ACTIVE</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-dot" style="animation-delay: 0.5s;"></span>
+            <span id="altitude-display">ALT: 400 KM</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-dot" style="animation-delay: 1s;"></span>
+            <span id="velocity-display">VEL: 7.66 KM/S</span>
+        </div>
+    </div>
+
+    <!-- COORDS HUD -->
     <div class="coords-hud" id="hud">
         <h4>Target Coordinates</h4>
         <span id="coord-display">00°00'00" N</span>
@@ -265,7 +354,6 @@
     <!-- SCROLL CONTENT -->
     <div class="scroll-container">
         
-        <!-- 1. Deep Space -->
         <section class="section" id="sec-1">
             <div class="content-box">
                 <span class="label">Phase 01</span>
@@ -274,7 +362,6 @@
             </div>
         </section>
 
-        <!-- 2. Earth Approach -->
         <section class="section" id="sec-2">
             <div class="content-box" style="margin-left: auto; text-align: right;">
                 <span class="label">Phase 02</span>
@@ -283,7 +370,6 @@
             </div>
         </section>
 
-        <!-- 3. Data Viz -->
         <section class="section" id="sec-3">
             <div class="content-box">
                 <span class="label">Analysis</span>
@@ -292,7 +378,6 @@
             </div>
         </section>
 
-        <!-- 4. Bangladesh Zoom -->
         <section class="section" id="sec-4">
             <div class="content-box" style="margin-left: auto;">
                 <span class="label">Target Acquired</span>
@@ -301,7 +386,6 @@
             </div>
         </section>
 
-        <!-- 5. Transit to Moon -->
         <section class="section" id="sec-5">
             <div class="content-box">
                 <span class="label">Phase 03</span>
@@ -310,7 +394,6 @@
             </div>
         </section>
 
-        <!-- 6. Moon Arrival -->
         <section class="section" id="sec-6">
             <div class="content-box" style="text-align: center; margin: auto;">
                 <span class="label">Destination</span>
@@ -319,327 +402,321 @@
             </div>
         </section>
 
-        <div style="height: 50vh;"></div>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import ThreeGlobe from 'three-globe';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import gsap from 'gsap';
-        import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
+    <script>
+        // Register GSAP plugins
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- PRELOADER LOGIC ---
-        const loader = document.querySelector('.loader');
-        const loaderStatus = document.querySelector('.loader-status');
-        const loaderTime = document.querySelector('.loader-time');
-        let timeLeft = 10.0; // 10 seconds (virtual)
+        // --- PRELOADER ---
+        const loaderEl = document.getElementById('loader');
+        const loaderStatus = document.getElementById('loaderStatus');
+        const loaderTime = document.getElementById('loaderTime');
+        const scrollIndicator = document.getElementById('scrollIndicator');
+        let timeLeft = 3.0; // Reduced to 3 seconds for better UX
         
-        // Simulate the countdown logic from the JS file
         const timerInterval = setInterval(() => {
-            timeLeft -= 0.1; // Decrement
+            timeLeft -= 0.1;
             if (timeLeft <= 0) {
                 timeLeft = 0;
                 clearInterval(timerInterval);
                 launchSequence();
             }
-            
-            // Format time 00:XX:XX
             const seconds = Math.floor(timeLeft);
             const ms = Math.floor((timeLeft % 1) * 100);
             loaderTime.textContent = `00:${seconds.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
-        }, 30); // Fast ticks
+        }, 100);
 
         function launchSequence() {
-            // Text Swap Animation
             loaderStatus.classList.add('launching');
             
-            // Reveal delay
+            // Show scroll indicator after a delay
             setTimeout(() => {
-                loader.classList.add('hidden');
-                document.getElementById('scene-container').style.opacity = 1;
-                initExperience(); // Start 3D logic
+                scrollIndicator.classList.add('visible');
+            }, 500);
+            
+            setTimeout(() => {
+                loaderEl.classList.add('hidden');
+                document.getElementById('globe-container').style.opacity = 1;
+                initExperience();
             }, 1000);
         }
 
-        // --- 3D SCENE SETUP ---
-        const container = document.getElementById('scene-container');
-        const scene = new THREE.Scene();
-        // Venturi uses deep black backgrounds, maybe a very subtle starfield
-        scene.background = new THREE.Color(0x040404);
-        scene.fog = new THREE.FogExp2(0x040404, 0.002);
+        // --- GLOBE SETUP ---
+        const container = document.getElementById('globe-container');
+        
+        // Generate population data for hex bins
+        const N = 800;
+        const populationData = [...Array(N).keys()].map(() => ({
+            lat: (Math.random() - 0.5) * 160,
+            lng: (Math.random() - 0.5) * 360,
+            pop: Math.random()
+        }));
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 4000);
-        camera.position.set(0, 0, 400);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        container.appendChild(renderer.domElement);
-
-        // --- SCENE OBJECTS ---
-
-        // 1. Group for Earth System
-        const earthGroup = new THREE.Group();
-        scene.add(earthGroup);
-
-        // EARTH (Using ThreeGlobe)
-        const Earth = new ThreeGlobe()
+        // Create Earth Globe with realistic textures
+        const earthGlobe = Globe()
             .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
             .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
-            .atmosphereColor('rgb(60, 100, 255)')
-            .atmosphereAltitude(0.2);
+            .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+            .showAtmosphere(true)
+            .atmosphereColor('rgba(100, 150, 255, 0.8)')
+            .atmosphereAltitude(0.25)
+            .hexBinPointsData([])
+            .hexBinPointWeight('pop')
+            .hexBinResolution(4)
+            .hexMargin(0.2)
+            .hexTopColor(() => 'rgba(255, 53, 9, 0.9)')
+            .hexSideColor(() => 'rgba(255, 53, 9, 0.6)')
+            .hexAltitude(d => d.sumWeight * 0.1)
+            (container);
+
+        // Access Three.js internals
+        const scene = earthGlobe.scene();
+        const camera = earthGlobe.camera();
+        const renderer = earthGlobe.renderer();
+        const controls = earthGlobe.controls();
+
+        // Disable default controls for scroll-driven animation
+        controls.enableZoom = false;
+        controls.enablePan = false;
+        controls.enableRotate = false;
+        controls.autoRotate = false;
+
+        // Set initial camera position
+        camera.position.set(0, 0, 450);
+
+        // Configure renderer
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x040404);
+
+        // Add custom lighting
+        const THREE = window.THREE;
         
-        earthGroup.add(Earth);
+        // Orange accent light (Venturi style)
+        const orangeLight = new THREE.PointLight(0xff3509, 1.5, 800);
+        orangeLight.position.set(150, -100, 200);
+        scene.add(orangeLight);
 
-        // Data for Earth (Hexagons)
-        const N_DATA = 1500;
-        const earthData = [...Array(N_DATA).keys()].map(() => ({
-            lat: (Math.random() - 0.5) * 160, // Avoid poles
-            lng: (Math.random() - 0.5) * 360,
-            size: Math.random()
-        }));
-        
-        Earth.hexBinPointsData(earthData)
-             .hexBinPointWeight('size')
-             .hexBinResolution(3)
-             .hexMargin(0.2)
-             .hexBinColor(() => 'rgba(255, 53, 9, 0)') // Venturi Orange, invisible start
-             .hexAltitude(0); // Flat start
+        // White fill light
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        fillLight.position.set(100, 100, 200);
+        scene.add(fillLight);
 
-        // 2. Group for Moon System
-        // We place it far away initially or hide it
-        const moonGroup = new THREE.Group();
-        moonGroup.visible = false; 
-        scene.add(moonGroup);
-
-        // MOON (Another ThreeGlobe instance)
-        // Using a dark lunar texture
-        const Moon = new ThreeGlobe()
-            .globeImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/moon.jpg')
-            .bumpImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/moon-topology.png')
-            .showAtmosphere(false); // Moon has no atmosphere
-        
-        moonGroup.add(Moon);
-
-        // 3. SATELLITE (Sentinel)
+        // Create Satellite
         const satGroup = new THREE.Group();
-        scene.add(satGroup);
-
-        // Create a geometric placeholder in Venturi style (Metallic/Orange)
-        const satGeo = new THREE.BoxGeometry(2, 2, 4);
-        const satMat = new THREE.MeshStandardMaterial({ 
-            color: 0xff3509, // Venturi Orange
-            roughness: 0.4, 
-            metalness: 0.8 
-        });
-        const satellite = new THREE.Mesh(satGeo, satMat);
         
-        // Solar Panels
-        const panelGeo = new THREE.PlaneGeometry(12, 3);
+        // Main body
+        const satBody = new THREE.Mesh(
+            new THREE.BoxGeometry(3, 3, 6),
+            new THREE.MeshStandardMaterial({ color: 0xff3509, roughness: 0.3, metalness: 0.8 })
+        );
+        satGroup.add(satBody);
+
+        // Solar panels
         const panelMat = new THREE.MeshStandardMaterial({ 
-            color: 0x111111, 
+            color: 0x1a1a3a, 
             roughness: 0.2, 
             metalness: 0.9,
             side: THREE.DoubleSide
         });
-        const panels = new THREE.Mesh(panelGeo, panelMat);
-        panels.rotation.x = Math.PI / 2;
-        satellite.add(panels);
-        satGroup.add(satellite);
+        const leftPanel = new THREE.Mesh(new THREE.PlaneGeometry(15, 4), panelMat);
+        leftPanel.position.set(-10, 0, 0);
+        leftPanel.rotation.y = Math.PI / 2;
+        satGroup.add(leftPanel);
 
-        // Try Loading GLB if available
-        const gltfLoader = new GLTFLoader();
-        gltfLoader.load('./assets/sentinel.glb', (gltf) => {
-            const model = gltf.scene;
-            model.scale.set(3,3,3);
-            satellite.visible = false; // Hide placeholder
-            panels.visible = false;
-            satGroup.add(model);
-        }, undefined, (err) => { console.log('Using placeholder satellite'); });
+        const rightPanel = new THREE.Mesh(new THREE.PlaneGeometry(15, 4), panelMat);
+        rightPanel.position.set(10, 0, 0);
+        rightPanel.rotation.y = Math.PI / 2;
+        satGroup.add(rightPanel);
 
+        // Antenna dish
+        const dish = new THREE.Mesh(
+            new THREE.ConeGeometry(2.5, 4, 16),
+            new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.7, roughness: 0.3 })
+        );
+        dish.position.set(0, 4, 0);
+        satGroup.add(dish);
 
-        // --- LIGHTING ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 1);
-        scene.add(ambientLight);
-        
-        const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-        dirLight.position.set(-100, 100, 200);
-        scene.add(dirLight);
+        satGroup.position.set(80, 50, 200);
+        satGroup.rotation.set(0.3, 0.8, 0.2);
+        scene.add(satGroup);
 
-        // Venturi style accent light
-        const orangeLight = new THREE.PointLight(0xff3509, 2, 500);
-        orangeLight.position.set(50, -50, 100);
-        scene.add(orangeLight);
+        // State tracking
+        let currentPhase = 'earth';
+        let hexDataVisible = false;
 
-
-        // --- ANIMATION CONTROLLER ---
-
+        // --- SCROLL ANIMATION ---
         function initExperience() {
-            // Initial Positions
-            satGroup.position.set(60, 30, 150); // Close to camera
-            satGroup.rotation.set(0.5, 1, 0);
+            document.getElementById('mission-stats').classList.add('visible');
+            document.getElementById('sec-1').classList.add('active');
 
-            // Timeline linked to scroll
-            const tl = gsap.timeline({
+            // Create a master timeline
+            const masterTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: ".scroll-container",
                     start: "top top",
                     end: "bottom bottom",
-                    scrub: 1.5 // Venturi-style smooth scrubbing
+                    scrub: 1.2,
+                    onUpdate: (self) => {
+                        updateHUD(self.progress);
+                    }
                 }
             });
 
-            // STEP 1: Satellite drift -> Earth Reveal
-            tl.to(satGroup.position, {
-                x: 0, y: 0, z: 120, // Move sat towards Earth orbit
-                duration: 5,
-                ease: "power2.inOut"
-            }, "start")
-            .to(camera.position, {
-                z: 250, // Move camera closer to Earth
-                duration: 5,
-                ease: "power2.inOut",
-                onStart: () => document.getElementById('sec-1').classList.add('active')
-            }, "start");
-
-            // STEP 2: Rotate Earth & Show Data
-            tl.to(earthGroup.rotation, {
-                y: 2.5, // Spin Earth
-                duration: 5,
-                ease: "none",
+            // Phase 1: Initial view
+            masterTl.to(camera.position, {
+                z: 280,
+                duration: 2,
+                ease: "power2.out",
                 onStart: () => {
-                    document.getElementById('sec-2').classList.add('active');
                     document.getElementById('hud').style.opacity = 1;
                 }
-            }, "data")
-            .to(camera.position, {
-                x: 30, y: 30, z: 180, // Angle view
-                duration: 5
-            }, "data")
-            // Reveal Hex Data (Population)
-            .to({}, {
-                duration: 1,
+            }, 0)
+            .to(satGroup.position, {
+                x: 40, y: 30, z: 150,
+                duration: 2
+            }, 0)
+            .to(satGroup.rotation, {
+                y: Math.PI * 0.5,
+                duration: 2
+            }, 0);
+
+            // Phase 2: Earth rotation
+            masterTl.to(camera.position, {
+                x: 50, y: 40, z: 220,
+                duration: 3,
+                onStart: () => {
+                    document.getElementById('sec-2').classList.add('active');
+                }
+            }, 2);
+
+            // Phase 3: Show hex data
+            masterTl.to({}, {
+                duration: 0.5,
                 onStart: () => {
                     document.getElementById('sec-3').classList.add('active');
-                    Earth.hexBinColor(d => `rgba(255, 53, 9, ${d.size})`) // Orange
-                         .hexAltitude(d => d.size * 0.4);
-                    // Update HUD
                     document.getElementById('coord-display').innerText = "POPULATION DENSITY";
+                    earthGlobe.hexBinPointsData(populationData);
+                    hexDataVisible = true;
                 }
-            }, "data+=2");
+            }, 5)
+            .to(camera.position, {
+                x: 30, y: 20, z: 200,
+                duration: 2
+            }, 5);
 
-            // STEP 3: Zoom to Bangladesh
-            // Coordinates of Dhaka: 23.8, 90.4
-            // We need to rotate the earth so Dhaka faces the camera (0,0,1)
-            // Or rotate the earth group.
-            // Simplified: Rotate Group
-            
-            tl.to(earthGroup.rotation, {
-                x: 0.41, // Approx Lat tilt 
-                y: 4.8,  // Approx Long rotation (tuned visually)
-                duration: 4,
-                ease: "power3.inOut",
+            // Phase 4: Zoom to Bangladesh
+            masterTl.to({}, {
+                duration: 0.5,
                 onStart: () => {
                     document.getElementById('sec-4').classList.add('active');
-                    // Reset Hex for cleanliness
-                    Earth.hexBinColor(() => 'transparent').hexAltitude(0);
                     document.getElementById('coord-display').innerText = "23.68° N, 90.35° E";
+                    earthGlobe.hexBinPointsData([]);
+                    hexDataVisible = false;
+                    earthGlobe.pointOfView({ lat: 23.68, lng: 90.35, altitude: 0.8 }, 2000);
                 }
-            }, "zoom")
-            .to(camera.position, {
-                z: 130, // Zoom in
-                duration: 4,
-                ease: "power3.inOut"
-            }, "zoom");
+            }, 8)
+            .to(satGroup.position, {
+                x: -30, y: 60, z: 140,
+                duration: 2
+            }, 8);
 
-            // STEP 4: Transition to Moon Scene
-            // This needs to be seamless. We will pull camera back, hide Earth, show Moon.
-            
-            tl.to(camera.position, {
-                z: 500, // Pull way back
-                duration: 3,
-                ease: "power2.in"
-            }, "transit")
-            .to(earthGroup.scale, {
-                x: 0, y: 0, z: 0, // Shrink Earth into nothing
-                duration: 1.5,
-                ease: "expo.in"
-            }, "transit+=1.5")
-            .call(() => {
-                earthGroup.visible = false;
-                moonGroup.visible = true;
-                moonGroup.scale.set(0,0,0);
-                moonGroup.rotation.y = Math.PI; // Dark side initially?
-            })
-            .to(moonGroup.scale, {
-                x: 1, y: 1, z: 1, // Grow Moon
-                duration: 1.5,
-                ease: "expo.out"
-            }, "transit+=3")
-            .to(camera.position, {
-                z: 200, // Approach Moon
-                duration: 3,
-                ease: "power2.out",
+            // Phase 5: Transition to Moon
+            masterTl.to({}, {
+                duration: 0.5,
                 onStart: () => {
                     document.getElementById('sec-5').classList.add('active');
                     document.getElementById('coord-display').innerText = "LUNAR TRANSFER";
+                    currentPhase = 'transit';
                 }
-            }, "transit+=3");
+            }, 11)
+            .to(camera.position, {
+                z: 400,
+                duration: 2
+            }, 11)
+            .to({}, {
+                duration: 1,
+                onStart: () => {
+                    // Switch to Moon texture
+                    earthGlobe
+                        .globeImageUrl('https://unpkg.com/three-globe/example/img/moon.jpg')
+                        .bumpImageUrl('https://unpkg.com/three-globe/example/img/moon-topology.png')
+                        .showAtmosphere(false);
+                    currentPhase = 'moon';
+                }
+            }, 12);
 
-            // STEP 5: Moon Orbit & Rover
-            tl.to(moonGroup.rotation, {
-                y: Math.PI + 1, // Rotate Moon
-                duration: 5,
-                ease: "none",
+            // Phase 6: Moon orbit
+            masterTl.to({}, {
+                duration: 0.5,
                 onStart: () => {
                     document.getElementById('sec-6').classList.add('active');
                     document.getElementById('coord-display').innerText = "SOUTH POLE AITKEN";
+                    earthGlobe.pointOfView({ lat: -85, lng: 0, altitude: 1.5 }, 3000);
                 }
-            }, "moon")
+            }, 14)
+            .to(camera.position, {
+                z: 280,
+                duration: 3
+            }, 14)
             .to(satGroup.position, {
-                x: -50, y: 20, z: 100, // Bring Satellite back into view orbiting Moon
-                duration: 4,
-                ease: "power2.out"
-            }, "moon");
-
+                x: -40, y: -20, z: 160,
+                duration: 3
+            }, 14)
+            .to(satGroup.rotation, {
+                y: Math.PI * 2,
+                z: 0.5,
+                duration: 3
+            }, 14);
         }
 
-        // --- RENDER LOOP ---
-        const clock = new THREE.Clock();
-        
-        function animate() {
-            const time = clock.getElapsedTime();
-
-            // Subtle idle animations
-            satGroup.rotation.y = time * 0.1;
-            satGroup.rotation.z = Math.sin(time * 0.2) * 0.1;
+        // Update HUD based on scroll progress
+        function updateHUD(progress) {
+            const altitude = Math.round(400 - progress * 380 + (currentPhase === 'moon' ? 384400 : 0));
+            const velocity = (7.66 + progress * 3.34).toFixed(2);
             
-            // Add a slight floating feel to camera
-            // camera.position.y += Math.sin(time) * 0.05;
-
-            // Stars Background (Manual to avoid texture loading issues)
-            // Note: In production, use a large sphere with star texture or points. 
-            // For now, simple color background is clean and Venturi-like.
-
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
+            document.getElementById('altitude-display').innerText = 
+                currentPhase === 'moon' ? `ALT: ${altitude.toLocaleString()} KM` : `ALT: ${altitude} KM`;
+            document.getElementById('velocity-display').innerText = `VEL: ${velocity} KM/S`;
+            
+            // Hide scroll indicator after some scrolling
+            if (progress > 0.1) {
+                scrollIndicator.classList.remove('visible');
+            }
         }
-        
-        animate();
 
-        // Resize Handler
+        // Animate satellite
+        function animateSatellite() {
+            const time = Date.now() * 0.001;
+            
+            // Subtle floating motion
+            satGroup.position.y += Math.sin(time * 0.5) * 0.02;
+            satGroup.rotation.z = Math.sin(time * 0.3) * 0.1;
+            
+            // Rotate panels slightly
+            satGroup.children.forEach((child, i) => {
+                if (i > 0 && i < 3) { // Panels
+                    child.rotation.z = Math.sin(time * 0.2) * 0.05;
+                }
+            });
+
+            requestAnimationFrame(animateSatellite);
+        }
+        animateSatellite();
+
+        // Handle resize
         window.addEventListener('resize', () => {
+            earthGlobe.width(window.innerWidth);
+            earthGlobe.height(window.innerHeight);
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // Handle scroll to start animations
+        window.addEventListener('wheel', () => {
+            scrollIndicator.classList.remove('visible');
+        }, { once: true });
 
     </script>
 </body>
 </html>
-
-
