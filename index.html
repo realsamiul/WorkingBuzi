@@ -552,44 +552,121 @@
         fillLight.position.set(100, 100, 200);
         scene.add(fillLight);
 
-        // Create Satellite
+        // Create Satellite Group
         const satGroup = new THREE.Group();
-        
-        // Main body
-        const satBody = new THREE.Mesh(
-            new THREE.BoxGeometry(4, 4, 8),
-            new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.2, metalness: 0.9 })
-        );
-        satGroup.add(satBody);
+        scene.add(satGroup);
 
-        // Solar panels
-        const panelMat = new THREE.MeshStandardMaterial({ 
-            color: 0x111111, 
-            roughness: 0.4, 
-            metalness: 0.9,
-            side: THREE.DoubleSide
-        });
-        const leftPanel = new THREE.Mesh(new THREE.PlaneGeometry(24, 6), panelMat);
-        leftPanel.position.set(-12, 0, 0);
-        leftPanel.rotation.y = Math.PI / 2;
-        satGroup.add(leftPanel);
+        // Create a placeholder satellite (will be replaced by GLB if available)
+        function createPlaceholderSatellite() {
+            // Clear any existing children
+            while(satGroup.children.length > 0) {
+                satGroup.remove(satGroup.children[0]);
+            }
+            
+            // Main body
+            const satBody = new THREE.Mesh(
+                new THREE.BoxGeometry(4, 4, 8),
+                new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.2, metalness: 0.9 })
+            );
+            satGroup.add(satBody);
 
-        const rightPanel = new THREE.Mesh(new THREE.PlaneGeometry(24, 6), panelMat);
-        rightPanel.position.set(12, 0, 0);
-        rightPanel.rotation.y = Math.PI / 2;
-        satGroup.add(rightPanel);
+            // Solar panels
+            const panelMat = new THREE.MeshStandardMaterial({ 
+                color: 0x111111, 
+                roughness: 0.4, 
+                metalness: 0.9,
+                side: THREE.DoubleSide
+            });
+            const leftPanel = new THREE.Mesh(new THREE.PlaneGeometry(24, 6), panelMat);
+            leftPanel.position.set(-12, 0, 0);
+            leftPanel.rotation.y = Math.PI / 2;
+            satGroup.add(leftPanel);
 
-        // Antenna dish
-        const dish = new THREE.Mesh(
-            new THREE.ConeGeometry(3, 5, 16),
-            new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.7, roughness: 0.3 })
-        );
-        dish.position.set(0, 5, 0);
-        satGroup.add(dish);
+            const rightPanel = new THREE.Mesh(new THREE.PlaneGeometry(24, 6), panelMat);
+            rightPanel.position.set(12, 0, 0);
+            rightPanel.rotation.y = Math.PI / 2;
+            satGroup.add(rightPanel);
 
+            // Antenna dish
+            const dish = new THREE.Mesh(
+                new THREE.ConeGeometry(3, 5, 16),
+                new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.7, roughness: 0.3 })
+            );
+            dish.position.set(0, 5, 0);
+            satGroup.add(dish);
+        }
+
+        // Load GLB satellite model if available
+        function loadGLBSatellite() {
+            // Create a GLTFLoader
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+            script.onload = () => {
+                const GLTFLoader = THREE.GLTFLoader || (window.THREE && window.THREE.GLTFLoader);
+                if (GLTFLoader) {
+                    const loader = new GLTFLoader();
+                    // Try to load the sentinel.glb from assets folder
+                    loader.load(
+                        './assets/sentinel.glb',
+                        (gltf) => {
+                            console.log('Satellite GLB loaded successfully');
+                            const model = gltf.scene;
+                            
+                            // Clear placeholder
+                            while(satGroup.children.length > 0) {
+                                satGroup.remove(satGroup.children[0]);
+                            }
+                            
+                            // Scale and position the model
+                            model.scale.set(5, 5, 5);
+                            model.rotation.set(0, Math.PI, 0); // Adjust orientation if needed
+                            
+                            // Apply Venturi-style materials
+                            model.traverse((child) => {
+                                if (child.isMesh) {
+                                    // Enhance materials for better appearance
+                                    if (child.material) {
+                                        child.material.metalness = 0.8;
+                                        child.material.roughness = 0.3;
+                                        
+                                        // Apply Venturi orange to certain parts
+                                        if (child.name.includes('body') || child.name.includes('main')) {
+                                            child.material.color.set(0xffaa00);
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            satGroup.add(model);
+                        },
+                        (xhr) => {
+                            // Loading progress
+                            console.log(`Satellite model loading: ${(xhr.loaded / xhr.total * 100)}%`);
+                        },
+                        (error) => {
+                            console.error('Error loading satellite GLB:', error);
+                            // Fallback to placeholder
+                            createPlaceholderSatellite();
+                        }
+                    );
+                } else {
+                    console.log('GLTFLoader not available, using placeholder');
+                    createPlaceholderSatellite();
+                }
+            };
+            script.onerror = () => {
+                console.log('Failed to load GLTFLoader, using placeholder');
+                createPlaceholderSatellite();
+            };
+            document.head.appendChild(script);
+        }
+
+        // Initialize satellite
+        loadGLBSatellite();
+
+        // Set initial position
         satGroup.position.set(80, 50, 200);
         satGroup.rotation.set(0.3, 0.8, 0.2);
-        scene.add(satGroup);
 
         // State tracking
         let currentPhase = 'earth';
@@ -699,10 +776,12 @@
             const altitude = Math.round(400 - progress * 380 + (currentPhase === 'moon' ? 384400 : 0));
             const velocity = (7.66 + progress * 3.34).toFixed(2);
             
-            // Update altitude display
-            const altitudeDisplay = document.querySelector('.hud-val');
-            if (altitudeDisplay) {
-                altitudeDisplay.innerHTML = altitude === 'moon' ? 
+            // Update altitude display if HUD is present
+            const altitudeElements = document.querySelectorAll('.hud-val');
+            if (altitudeElements.length > 0) {
+                // Update first HUD value (typically altitude)
+                const altitudeDisplay = altitudeElements[0];
+                altitudeDisplay.innerHTML = currentPhase === 'moon' ? 
                     `${altitude.toLocaleString()}<span class="hud-unit">KM</span>` : 
                     `${altitude}<span class="hud-unit">KM</span>`;
             }
@@ -714,11 +793,12 @@
             
             // Subtle floating motion
             satGroup.position.y += Math.sin(time * 0.5) * 0.02;
+            satGroup.rotation.y += 0.002;
             satGroup.rotation.z = Math.sin(time * 0.3) * 0.1;
             
-            // Rotate panels slightly
-            satGroup.children.forEach((child, i) => {
-                if (i > 0 && i < 3) { // Panels
+            // Rotate panels if they exist
+            satGroup.children.forEach((child) => {
+                if (child.isMesh && child.geometry.type === 'PlaneGeometry') {
                     child.rotation.z = Math.sin(time * 0.2) * 0.05;
                 }
             });
@@ -734,6 +814,9 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
         });
+
+        // Initialize with placeholder while GLB loads
+        createPlaceholderSatellite();
 
     </script>
 </body>
