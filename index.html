@@ -1,729 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Venturi Space | Mission Control</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --black: 4, 4, 4;
-            --body: 4, 4, 4;
-            --text: 244, 244, 244;
-            --white: 255, 255, 255;
-            --orange: 255, 53, 9;
-            --grey: 26, 26, 26;
-            --ease: cubic-bezier(0.25, 0, 0.25, 1);
-            --font-display: 'Barlow', sans-serif;
-            --font-tech: 'Rajdhani', sans-serif;
-        }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>M0NARQ · Space Sustainability</title>
 
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: rgb(var(--body));
-            color: rgb(var(--text));
-            overflow-x: hidden;
-            font-family: var(--font-display);
-            -webkit-font-smoothing: antialiased;
-            overflow-y: auto;
-            height: 100%;
-        }
+<!-- ──  LOCAL FONTS  ───────────────────────────────────────── -->
+<link rel="preload" href="EditorialNew-Light.woff2"      as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="SweetSansPro-Medium.woff2"     as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="NeueMontreal-Regular.woff2"    as="font" type="font/woff2" crossorigin>
 
-        /* Preloader */
-        .loader {
-            position: fixed;
-            inset: 0;
-            z-index: 200;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            background: rgb(var(--body));
-        }
+<style>
+/* Editorial New – light for hero H1 */
+@font-face{font-family:'Editorial New';src:url('EditorialNew-Light.woff2')format('woff2');
+  font-style:normal;font-weight:300;font-display:swap}
+/* Sweet Sans Pro – body copy */
+@font-face{font-family:'Sweet Sans';src:url('SweetSansPro-Medium.woff2')format('woff2');
+  font-style:normal;font-weight:500;font-display:swap}
+/* Neue Montreal – subheads / UI */
+@font-face{font-family:'Neue Montreal';src:url('NeueMontreal-Regular.woff2')format('woff2');
+  font-style:normal;font-weight:400;font-display:swap}
 
-        .loader-fill {
-            position: fixed;
-            inset: 0;
-            background: rgb(var(--body));
-            transition: transform 1s var(--ease);
-            transform-origin: top;
-        }
+:root{
+  --brand-red:#c40d2e;
+  --teal:#33ffd5;
+  --midnight:#050d24;
+  --black:#000;
+  --text-grey:#b5b5b5;
+  --display:'Editorial New',serif;   /* big headlines */
+  --subhead:'Neue Montreal',sans-serif;
+  --body:'Sweet Sans',sans-serif;
+}
 
-        .loader-data {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2rem;
-            transition: opacity 0.5s var(--ease);
-        }
+/* ──  GLOBAL  ─────────────────────────────────────────────── */
+html,body{height:100%;width:100%;margin:0;overflow-x:hidden;
+  font-family:var(--body);
+  background:radial-gradient(circle at 50% 20%,var(--midnight) 0%,var(--black) 80%);
+  color:#fff;-webkit-font-smoothing:antialiased}
 
-        .loader.hidden {
-            pointer-events: none;
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.5s var(--ease), visibility 0.5s;
-        }
+/* ──  PRE-LOADER  ─────────────────────────────────────────── */
+#preloader{position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;flex-direction:column;
+  z-index:200;pointer-events:none}
+#preloader canvas{width:100%;height:100%;position:absolute;top:0;left:0}
+#titleScramble{font-family:'Neue Montreal',sans-serif;font-size:2.2rem;letter-spacing:.25em;z-index:10}
+#preloader::after{content:'';width:160px;height:160px;border-radius:50%;
+  background:radial-gradient(circle,#fff2 0%,transparent 70%);
+  position:absolute;mix-blend-mode:overlay;animation:glint 3s infinite}
+@keyframes glint{0%{transform:scale(.3)}50%{transform:scale(1)}100%{transform:scale(.3)}}
 
-        .loader.hidden .loader-fill { 
-            transform: scaleY(0); 
-        }
-        .loader.hidden .loader-data { 
-            opacity: 0; 
-        }
+/* ──  UI CHROME  ──────────────────────────────────────────── */
+.ui-layer{position:fixed;inset:0;padding:40px;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none;z-index:10}
+.logo{font-family:var(--subhead);letter-spacing:.25em;font-size:1.35rem;text-transform:uppercase}
+.progress-bar-container{position:fixed;right:50px;top:50%;transform:translateY(-50%);
+  width:1px;height:20vh;background:rgba(255,255,255,.18);z-index:20}
+.progress-bar-fill{width:100%;height:0;background:var(--brand-red)}
 
-        .loader-status {
-            font-family: var(--font-tech);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 1.5em;
-            overflow: hidden;
-        }
+/* ──  SCROLL SECTIONS  ───────────────────────────────────── */
+.scroll-content{position:relative;z-index:5}
+section{min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:0 15%;box-sizing:border-box;pointer-events:none}
+.text-block{max-width:560px;pointer-events:auto;opacity:0;transform:translateY(40px)}
 
-        .loader-status span {
-            display: block;
-            transition: transform 0.5s var(--ease);
-        }
+h1{font-family:var(--display);font-weight:300;letter-spacing:.02em;text-transform:uppercase;
+  font-size:clamp(3.3rem,6vw,7rem);line-height:1;margin:0 0 2rem}
+h2{font-family:var(--subhead);font-weight:400;text-transform:uppercase;letter-spacing:.1em;
+  font-size:2rem;margin:0 0 1rem;color:var(--brand-red)}
+p{font-family:var(--body);font-weight:500;font-size:1.05rem;line-height:1.8;color:var(--text-grey);margin:0 0 1.4rem}
+.big-stat{font-family:var(--subhead);font-size:8rem;line-height:1;margin:0}
 
-        .loader-status.launching .loader-prepare { transform: translateY(-100%); }
-        .loader-status.launching .loader-ready { transform: translateY(-100%); }
+#section-intro{align-items:flex-start}
+#section-stats{align-items:flex-end;text-align:right}
+#section-privateer{align-items:center;text-align:center}
+#section-wayfinder{align-items:flex-start}
 
-        .loader-countdown {
-            display: flex;
-            align-items: center;
-            font-family: var(--font-tech);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .loader-bars {
-            width: 3.9rem;
-            margin-right: 1rem;
-        }
-
-        .loader-bars rect {
-            fill: rgba(255, 255, 255, 0.5);
-            animation: pulse 2s steps(3) infinite;
-        }
-        .loader-bars rect:nth-child(1) { animation-delay: 0.23s; }
-        .loader-bars rect:nth-child(2) { animation-delay: 0.46s; }
-        .loader-bars rect:nth-child(3) { animation-delay: 0.69s; }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.2; }
-        }
-
-        /* Globe Container */
-        #globe-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
-            opacity: 0;
-            transition: opacity 2s var(--ease);
-            pointer-events: none;
-        }
-
-        /* Overlay text for debugging */
-        .debug-info {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            color: white;
-            font-family: monospace;
-            font-size: 12px;
-            opacity: 0.7;
-        }
-
-        /* FPS counter */
-        #fps {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            color: rgb(var(--orange));
-            font-family: var(--font-tech);
-            font-size: 14px;
-        }
-    </style>
-
-    <!-- GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    
-    <!-- THREE.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- OrbitControls -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <!-- GLTFLoader -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <!-- Improved Earth textures -->
-    <script src="https://unpkg.com/three-globe@2.31.0/dist/three-globe.min.js"></script>
+/* 3-D canvas */
+#canvas-container{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0;transition:opacity 1.5s ease}
+</style>
 </head>
 <body>
 
-    <!-- PRELOADER -->
-    <div class="loader" id="loader">
-        <div class="loader-fill"></div>
-        <div class="loader-data">
-            <svg class="asset loader-logo" width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10,10 L30,30 L50,10" fill="none" stroke="white" stroke-width="4"/>
-                <text x="60" y="28" fill="white" font-family="Rajdhani" font-size="18" font-weight="600">VENTURI SPACE</text>
-            </svg>
-            
-            <div class="loader-status" id="loaderStatus">
-                <span class="loader-prepare">Ready for launch</span>
-                <span class="loader-ready">Take-off</span>
-            </div>
-            
-            <div class="loader-countdown">
-                <svg class="asset loader-bars" width="39" height="10" viewBox="0 0 39 10" fill="none">
-                    <rect opacity="0.2" width="1" height="10" x="38" fill="#D9D9D9"></rect>
-                    <rect opacity="0.6" width="1" height="10" x="22" fill="#D9D9D9"></rect>
-                    <rect opacity="0.3" width="2" height="10" x="26" fill="#D9D9D9"></rect>
-                    <rect opacity="0.8" width="3" height="10" x="8" fill="#D9D9D9"></rect>
-                    <rect opacity="0.1" width="4" height="10" x="34" fill="#D9D9D9"></rect>
-                </svg>
-                <span class="loader-time" id="loaderTime">00:10:00</span>
-            </div>
-        </div>
+<!-- ── PRE-LOADER ── -->
+<div id="preloader">
+  <div id="titleScramble">M0NARQ</div>
+</div>
+
+<!-- ── UI ── -->
+<div class="ui-layer"><div class="logo">M0NARQ</div></div>
+<div class="progress-bar-container"><div id="scroll-progress" class="progress-bar-fill"></div></div>
+
+<!-- ── 3-D Earth canvas ── -->
+<div id="canvas-container"></div>
+
+<!-- ── CONTENT ── -->
+<div class="scroll-content">
+  <section id="section-intro">
+    <div class="text-block">
+      <h1>Planet<br>M0NARQ</h1>
+      <p>From silent beeps to high-bandwidth constellations, orbit has evolved. M0NARQ turns that evolution into geospatial insight.</p>
     </div>
+  </section>
 
-    <!-- DEBUG INFO -->
-    <div class="debug-info" id="debugInfo"></div>
-    <div id="fps">FPS: 60</div>
+  <section id="section-stats">
+    <div class="text-block">
+      <span class="big-stat" id="stat-counter">0</span>
+      <h2>Orbital Objects</h2>
+      <p>Human-made objects larger than a softball are currently being tracked as they circle Earth.</p>
+      <p>24 000 more satellites are scheduled to launch within the next decade.</p>
+    </div>
+  </section>
 
-    <!-- GLOBE CONTAINER -->
-    <div id="globe-container"></div>
+  <section id="section-privateer">
+    <div class="text-block" style="max-width:800px">
+      <h2>M0NARQ × PRIVATEER</h2>
+      <p>Together we monitor, assess and verify on-orbit behaviour for a safer, more sustainable space.</p>
+    </div>
+  </section>
 
-    <script>
-        // Register GSAP plugins
-        gsap.registerPlugin(ScrollTrigger);
+  <section id="section-wayfinder">
+    <div class="text-block">
+      <h1>Wayfinder</h1>
+      <p>An open-access, near-real-time visualisation of satellites and debris—empowering responsible actors across the globe.</p>
+    </div>
+  </section>
+  <div style="height:50vh"></div>
+</div>
 
-        // --- PRELOADER ---
-        const loaderEl = document.getElementById('loader');
-        const loaderStatus = document.getElementById('loaderStatus');
-        const loaderTime = document.getElementById('loaderTime');
-        const debugInfo = document.getElementById('debugInfo');
-        const fpsElement = document.getElementById('fps');
-        
-        let timeLeft = 3.0;
-        
-        const timerInterval = setInterval(() => {
-            timeLeft -= 0.1;
-            if (timeLeft <= 0) {
-                timeLeft = 0;
-                clearInterval(timerInterval);
-                launchSequence();
-            }
-            const seconds = Math.floor(timeLeft);
-            const ms = Math.floor((timeLeft % 1) * 100);
-            loaderTime.textContent = `00:${seconds.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
-        }, 100);
+<!-- ── LIBS (flat paths) ── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/loaders/GLTFLoader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="ScrambleTextPlugin.min.js"></script>
 
-        function launchSequence() {
-            loaderStatus.classList.add('launching');
-            
-            setTimeout(() => {
-                loaderEl.classList.add('hidden');
-                document.getElementById('globe-container').style.opacity = 1;
-                initScene();
-            }, 1000);
-        }
+<script>
+/* ============================================================
+   1.  PRE-LOADER  (Sentinel GLB + GSAP ScrambleText)
+============================================================ */
+const preCanvas=document.createElement('canvas');
+preCanvas.style.cssText='width:100%;height:100%;position:absolute;top:0;left:0';
+document.getElementById('preloader').appendChild(preCanvas);
 
-        // --- MAIN SCENE SETUP ---
-        let scene, camera, renderer, controls;
-        let satelliteModel = null;
-        let earthGlobe = null;
-        let stars = null;
-        let frameCount = 0;
-        let lastTime = performance.now();
-        let fps = 60;
+const pRend=new THREE.WebGLRenderer({canvas:preCanvas,alpha:true,antialias:true});
+pRend.setPixelRatio(Math.min(devicePixelRatio,2));pRend.setSize(innerWidth,innerHeight);
+const pScene=new THREE.Scene();
+const pCam=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,100);pCam.position.set(0,0,4);
+new THREE.TextureLoader().load('milkyway_8k.jpg',t=>{t.mapping=THREE.EquirectangularReflectionMapping;pScene.environment=t;});
 
-        function initScene() {
-            const container = document.getElementById('globe-container');
-            
-            // Create scene with proper dark space background
-            scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.0005);
-            
-            // Create camera
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
-            camera.position.set(0, 0, 1000); // Start far away
-            
-            // Create renderer with proper settings
-            renderer = new THREE.WebGLRenderer({ 
-                antialias: true, 
-                alpha: true,
-                powerPreference: "high-performance"
-            });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setClearColor(0x000000, 1);
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 0.8;
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            
-            container.appendChild(renderer.domElement);
-            
-            // Create orbit controls (for debugging, will be disabled for production)
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.enableZoom = true;
-            controls.enablePan = false;
-            controls.enableRotate = true;
-            controls.autoRotate = false;
-            controls.maxDistance = 2000;
-            controls.minDistance = 100;
+new THREE.GLTFLoader().load('sentinel.glb',glb=>{
+  const sat=glb.scene;sat.scale.set(2,2,2);pScene.add(sat);
+  pScene.add(new THREE.DirectionalLight(0xffffff,1).position.set(2,2,5));
+  pScene.add(new THREE.AmbientLight(0xffffff,.4));
+  gsap.to(pCam.position,{z:2,x:1.2,y:.4,duration:4,ease:'power1.inOut',delay:.5});
+  gsap.to(sat.rotation,{y:Math.PI*2,duration:6,ease:'none'});
+});
 
-            // --- CREATE REALISTIC STARFIELD ---
-            createStarfield();
-            
-            // --- LOAD SATELLITE FIRST ---
-            loadSatellite();
-            
-            // --- CREATE EARTH (will be added later) ---
-            createEarth();
-            
-            // --- LIGHTING SETUP ---
-            setupLighting();
-            
-            // Start animation
-            animate();
-            
-            // Handle resize
-            window.addEventListener('resize', onWindowResize);
-        }
+function animatePre(){pRend.render(pScene,pCam);requestAnimationFrame(animatePre);}
+animatePre();
 
-        function createStarfield() {
-            const starCount = 5000;
-            const starGeometry = new THREE.BufferGeometry();
-            const starPositions = new Float32Array(starCount * 3);
-            const starSizes = new Float32Array(starCount);
-            const starColors = new Float32Array(starCount * 3);
-            
-            for (let i = 0; i < starCount; i++) {
-                // Position stars in a sphere around the scene
-                const radius = 3000 + Math.random() * 2000;
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                
-                starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-                starPositions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-                starPositions[i * 3 + 2] = radius * Math.cos(phi);
-                
-                // Random sizes with some variation
-                starSizes[i] = 0.5 + Math.random() * 2.5;
-                
-                // Slight color variation (mostly white with hints of blue/orange)
-                const colorVariation = Math.random() * 0.3;
-                starColors[i * 3] = 1.0 - colorVariation;
-                starColors[i * 3 + 1] = 1.0 - colorVariation * 0.5;
-                starColors[i * 3 + 2] = 1.0 - colorVariation;
-            }
-            
-            starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-            starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
-            starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-            
-            const starMaterial = new THREE.PointsMaterial({
-                size: 1.5,
-                sizeAttenuation: true,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.8
-            });
-            
-            stars = new THREE.Points(starGeometry, starMaterial);
-            scene.add(stars);
-        }
+gsap.registerPlugin(ScrambleTextPlugin);
+gsap.fromTo('#titleScramble',{scrambleText:{text:'',chars:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',speed:0.35}},
+  {duration:2,scrambleText:{text:'M0NARQ',revealDelay:0},onComplete:finishPreloader});
 
-        function loadSatellite() {
-            const loader = new THREE.GLTFLoader();
-            
-            loader.load(
-                './assets/sentinel.glb',
-                (gltf) => {
-                    console.log('Satellite GLB loaded successfully');
-                    
-                    satelliteModel = gltf.scene;
-                    
-                    // Scale and position
-                    satelliteModel.scale.set(10, 10, 10);
-                    satelliteModel.position.set(200, 100, 300);
-                    satelliteModel.rotation.set(0, Math.PI, 0);
-                    
-                    // Traverse and enhance materials
-                    satelliteModel.traverse((child) => {
-                        if (child.isMesh) {
-                            // Enable shadows
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                            
-                            // Enhance materials
-                            if (child.material) {
-                                // Make materials more metallic and reflective
-                                child.material.metalness = 0.9;
-                                child.material.roughness = 0.2;
-                                child.material.envMapIntensity = 1.5;
-                                
-                                // Add emissive for glint effect
-                                child.material.emissive = new THREE.Color(0x111111);
-                                child.material.emissiveIntensity = 0.1;
-                                
-                                // Add subtle sheen
-                                child.material.sheen = 0.5;
-                                child.material.sheenRoughness = 0.3;
-                                child.material.sheenColor = new THREE.Color(0xff3509);
-                            }
-                        }
-                    });
-                    
-                    scene.add(satelliteModel);
-                    debugInfo.textContent = 'Satellite loaded ✓';
-                    
-                    // Start camera animation around satellite
-                    animateCameraToSatellite();
-                },
-                (xhr) => {
-                    const percent = (xhr.loaded / xhr.total * 100).toFixed(2);
-                    debugInfo.textContent = `Loading satellite: ${percent}%`;
-                },
-                (error) => {
-                    console.error('Error loading satellite GLB:', error);
-                    debugInfo.textContent = 'Error loading satellite';
-                    createFallbackSatellite();
-                }
-            );
-        }
+function finishPreloader(){
+  gsap.to('#preloader',{opacity:0,duration:.8,ease:'power2.inOut',onComplete:()=>{preloader.remove();initMainScene();}});
+}
 
-        function createFallbackSatellite() {
-            console.log('Creating fallback satellite');
-            
-            const group = new THREE.Group();
-            
-            // Main body (gold/orange venturi color)
-            const bodyGeometry = new THREE.BoxGeometry(8, 8, 16);
-            const bodyMaterial = new THREE.MeshStandardMaterial({
-                color: 0xff5500,
-                metalness: 0.95,
-                roughness: 0.1,
-                emissive: 0x222200,
-                emissiveIntensity: 0.2
-            });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.castShadow = true;
-            group.add(body);
-            
-            // Solar panels
-            const panelGeometry = new THREE.BoxGeometry(40, 0.5, 30);
-            const panelMaterial = new THREE.MeshStandardMaterial({
-                color: 0x111133,
-                metalness: 0.8,
-                roughness: 0.3,
-                emissive: 0x000022,
-                emissiveIntensity: 0.1
-            });
-            
-            const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
-            leftPanel.position.set(-25, 0, 0);
-            leftPanel.castShadow = true;
-            group.add(leftPanel);
-            
-            const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
-            rightPanel.position.set(25, 0, 0);
-            rightPanel.castShadow = true;
-            group.add(rightPanel);
-            
-            // Antenna dish
-            const dishGeometry = new THREE.ConeGeometry(6, 10, 16);
-            const dishMaterial = new THREE.MeshStandardMaterial({
-                color: 0xcccccc,
-                metalness: 0.9,
-                roughness: 0.1
-            });
-            const dish = new THREE.Mesh(dishGeometry, dishMaterial);
-            dish.position.set(0, 12, 0);
-            dish.rotation.x = Math.PI;
-            dish.castShadow = true;
-            group.add(dish);
-            
-            satelliteModel = group;
-            satelliteModel.position.set(200, 100, 300);
-            satelliteModel.rotation.set(0.3, 0.8, 0.2);
-            scene.add(satelliteModel);
-            
-            debugInfo.textContent = 'Fallback satellite created ✓';
-            
-            // Start camera animation
-            animateCameraToSatellite();
-        }
+/* ============================================================
+   2.  MAIN SCENE
+============================================================ */
+function initMainScene(){
+  const cont=document.getElementById('canvas-container');
+  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  cont.appendChild(renderer.domElement);
 
-        function createEarth() {
-            // Create Earth with three-globe for better realism
-            earthGlobe = Globe()
-                .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-                .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
-                .showAtmosphere(true)
-                .atmosphereColor('rgba(100, 150, 255, 0.3)')
-                .atmosphereAltitude(0.15)
-                .globeMaterial(new THREE.MeshStandardMaterial({
-                    roughness: 0.8,
-                    metalness: 0.2,
-                    bumpScale: 2
-                }));
-            
-            // Get the Three.js objects from globe.gl
-            const earthObject = earthGlobe;
-            
-            // Position Earth far away initially
-            earthObject.position.set(-500, 0, -1000);
-            earthObject.scale.set(150, 150, 150);
-            
-            // Enhance Earth materials
-            earthObject.traverse((child) => {
-                if (child.isMesh) {
-                    child.receiveShadow = true;
-                    if (child.material) {
-                        child.material.envMapIntensity = 0.5;
-                    }
-                }
-            });
-            
-            scene.add(earthObject);
-            
-            // Add a subtle rotation animation
-            const earthRotation = { y: 0 };
-            gsap.to(earthRotation, {
-                y: Math.PI * 2,
-                duration: 120,
-                repeat: -1,
-                ease: "none",
-                onUpdate: () => {
-                    earthObject.rotation.y = earthRotation.y;
-                }
-            });
-            
-            debugInfo.textContent += ' | Earth created ✓';
-        }
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.1,1000);
+  cam.position.set(0,0,18);
 
-        function setupLighting() {
-            // Clear any existing lights
-            scene.children.forEach(child => {
-                if (child.isLight) {
-                    scene.remove(child);
-                }
-            });
-            
-            // Main sun light (directional, simulating sunlight)
-            const sunLight = new THREE.DirectionalLight(0xffffff, 2);
-            sunLight.position.set(500, 300, 500);
-            sunLight.castShadow = true;
-            sunLight.shadow.mapSize.width = 2048;
-            sunLight.shadow.mapSize.height = 2048;
-            sunLight.shadow.camera.near = 0.5;
-            sunLight.shadow.camera.far = 1000;
-            sunLight.shadow.camera.left = -100;
-            sunLight.shadow.camera.right = 100;
-            sunLight.shadow.camera.top = 100;
-            sunLight.shadow.camera.bottom = -100;
-            scene.add(sunLight);
-            
-            // Fill light (ambient, very subtle)
-            const fillLight = new THREE.AmbientLight(0x404040, 0.3);
-            scene.add(fillLight);
-            
-            // Back light for rim lighting
-            const backLight = new THREE.DirectionalLight(0x4466ff, 0.5);
-            backLight.position.set(-500, -200, -500);
-            scene.add(backLight);
-            
-            // Venturi orange accent light (very subtle)
-            const orangeLight = new THREE.PointLight(0xff3509, 0.8, 1000);
-            orangeLight.position.set(300, 200, 400);
-            scene.add(orangeLight);
-            
-            // Add lens flare effect for star glints
-            const lensFlare = new THREE.PointLight(0xffffff, 0.5, 2000);
-            lensFlare.position.set(-1000, 800, -1500);
-            scene.add(lensFlare);
-        }
+  /* ── Texture loading ── */
+  const tex={},mgr=new THREE.LoadingManager(()=>{cont.style.opacity=1;startScrollAnim();render();});
+  const tl=new THREE.TextureLoader(mgr);
+  tex.alb=tl.load('albedo_8k.jpg');
+  tex.nit=tl.load('night_8k.jpg');
+  tex.cld=tl.load('clouds_4k.webp');
+  tex.sta=tl.load('milkyway_8k.jpg',t=>{t.mapping=THREE.EquirectangularReflectionMapping;});
+  tex.nrm=tl.load('normal_4k.basis');
+  tex.spe=tl.load('spec_4k.basis');
+  tex.rou=tl.load('rough_4k.basis');
 
-        function animateCameraToSatellite() {
-            if (!satelliteModel) return;
-            
-            // Camera animation sequence
-            const tl = gsap.timeline();
-            
-            // Start: Camera far away, looking at satellite
-            camera.position.set(0, 0, 1000);
-            camera.lookAt(satelliteModel.position);
-            
-            // Sequence 1: Slow approach to satellite
-            tl.to(camera.position, {
-                x: 100,
-                y: 50,
-                z: 400,
-                duration: 4,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    camera.lookAt(satelliteModel.position);
-                }
-            })
-            
-            // Sequence 2: Orbit around satellite
-            .to(camera.position, {
-                x: -150,
-                y: 80,
-                z: 350,
-                duration: 6,
-                ease: "sine.inOut",
-                onUpdate: () => {
-                    camera.lookAt(satelliteModel.position);
-                }
-            })
-            
-            // Sequence 3: Pull back to reveal Earth
-            .to(camera.position, {
-                x: 0,
-                y: 0,
-                z: 800,
-                duration: 5,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    camera.lookAt(satelliteModel.position);
-                },
-                onComplete: () => {
-                    // Now pan to Earth
-                    animateCameraToEarth();
-                }
-            });
-        }
+  /* ── Earth group ── */
+  const g=new THREE.Group();scene.add(g);
+  const earthMat=new THREE.MeshStandardMaterial({
+    map:tex.alb,normalMap:tex.nrm,metalnessMap:tex.spe,roughnessMap:tex.rou,
+    emissiveMap:tex.nit,emissive:new THREE.Color('#222')});
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(5,128,128),earthMat));
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(5.05,64,64),
+    new THREE.MeshLambertMaterial({map:tex.cld,transparent:true,opacity:.4,side:THREE.DoubleSide})));
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(5.2,64,64),new THREE.ShaderMaterial({
+    vertexShader:`varying vec3 v;void main(){v=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`varying vec3 v;void main(){float i=pow(.55-dot(v,vec3(0,0,1.)),4.);gl_FragColor=vec4(.3,.6,1.,1.)*i*1.7;}`,
+    side:THREE.BackSide,blending:THREE.AdditiveBlending,transparent:true}));
 
-        function animateCameraToEarth() {
-            if (!earthGlobe) return;
-            
-            const tl = gsap.timeline();
-            
-            // Move camera to view both satellite and Earth
-            tl.to(camera.position, {
-                x: 300,
-                y: 150,
-                z: 600,
-                duration: 5,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    // Look between satellite and Earth
-                    const lookAtPosition = new THREE.Vector3();
-                    lookAtPosition.lerpVectors(
-                        satelliteModel.position,
-                        earthGlobe.position,
-                        0.7
-                    );
-                    camera.lookAt(lookAtPosition);
-                }
-            })
-            
-            // Focus on Earth
-            .to(camera.position, {
-                x: 0,
-                y: 0,
-                z: 400,
-                duration: 6,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    camera.lookAt(earthGlobe.position);
-                }
-            });
-        }
+  /* ── Stars ── */
+  function star(r,o){const m=new THREE.Mesh(new THREE.SphereGeometry(r,64,64),
+    new THREE.MeshBasicMaterial({map:tex.sta,side:THREE.BackSide,transparent:true,opacity:o}));scene.add(m);return m;}
+  const sNear=star(90,.28),sFar=star(120,.55);
 
-        // Animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            const currentTime = performance.now();
-            const deltaTime = currentTime - lastTime;
-            frameCount++;
-            
-            // Update FPS counter every second
-            if (deltaTime >= 1000) {
-                fps = Math.round((frameCount * 1000) / deltaTime);
-                fpsElement.textContent = `FPS: ${fps}`;
-                frameCount = 0;
-                lastTime = currentTime;
-            }
-            
-            // Update controls
-            if (controls) {
-                controls.update();
-            }
-            
-            // Animate satellite if it exists
-            if (satelliteModel) {
-                const time = performance.now() * 0.001;
-                
-                // Subtle floating animation
-                satelliteModel.position.y += Math.sin(time * 0.5) * 0.05;
-                
-                // Slow rotation
-                satelliteModel.rotation.y += 0.002;
-                satelliteModel.rotation.x = Math.sin(time * 0.3) * 0.05;
-                
-                // Solar panel subtle movement
-                satelliteModel.traverse((child) => {
-                    if (child.name && child.name.includes('panel')) {
-                        child.rotation.z = Math.sin(time * 0.2 + child.position.x * 0.01) * 0.02;
-                    }
-                });
-                
-                // Glint effect on metallic parts
-                satelliteModel.traverse((child) => {
-                    if (child.isMesh && child.material && child.material.emissive) {
-                        const glint = Math.sin(time * 2 + child.position.x * 0.1) * 0.1 + 0.1;
-                        child.material.emissiveIntensity = glint;
-                    }
-                });
-            }
-            
-            // Animate stars (subtle twinkle)
-            if (stars) {
-                const time = performance.now() * 0.0005;
-                stars.rotation.y += 0.0001;
-                
-                // Update star sizes for twinkling effect
-                const sizes = stars.geometry.attributes.size;
-                for (let i = 0; i < sizes.count; i++) {
-                    const twinkle = Math.sin(time + i * 0.1) * 0.3 + 0.7;
-                    sizes.array[i] = (0.5 + Math.random() * 2.5) * twinkle;
-                }
-                sizes.needsUpdate = true;
-            }
-            
-            // Render
-            renderer.render(scene, camera);
-        }
+  /* ── Debris ── */
+  const dCnt=devicePixelRatio<1.5?12000:27000,pos=[];
+  for(let i=0;i<dCnt;i++){const r=5.5+Math.random()*2.4,t=Math.random()*2*Math.PI,p=Math.acos(2*Math.random()-1);
+    pos.push(r*Math.sin(p)*Math.cos(t),r*Math.sin(p)*Math.sin(t),r*Math.cos(p));}
+  const dGeo=new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  const dMat=new THREE.PointsMaterial({color:'#ffffff',size:.03,transparent:true,opacity:0});
+  scene.add(new THREE.Points(dGeo,dMat));
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
+  /* ── Arcs ── */
+  const arcGrp=new THREE.Group();scene.add(arcGrp);
+  const ARC_MAX=devicePixelRatio<1.5?25:48;
+  setInterval(()=>{if(arcGrp.children.length<ARC_MAX)addArc();},400);
+  function addArc(){
+    const r=6+Math.random()*1.5;
+    const curve=new THREE.CatmullRomCurve3([...Array(30)].map(()=>new THREE.Vector3().setFromSphericalCoords(
+      r,Math.random()*Math.PI,Math.random()*2*Math.PI)));
+    const geo=new THREE.TubeGeometry(curve,.08,.02,8,false);
+    const mat=new THREE.MeshBasicMaterial({color:varColor('--teal'),transparent:true,opacity:0});
+    const mesh=new THREE.Mesh(geo,mat);arcGrp.add(mesh);
+    gsap.fromTo(mat,{opacity:0},{opacity:.9,duration:.6,ease:'power2.out',yoyo:true,repeat:1,repeatDelay:.8,
+      onComplete:()=>{arcGrp.remove(mesh);geo.dispose();mat.dispose();}});
+  }
 
-        // Handle resize
-        window.addEventListener('resize', onWindowResize);
+  /* ── Lights ── */
+  scene.environment=tex.sta;
+  scene.add(new THREE.DirectionalLight(0xffffff,1).position.set(20,10,10));
+  scene.add(new THREE.AmbientLight(0xffffff,.15));
 
-    </script>
+  /* ── Resize ── */
+  addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);});
+
+  /* ── Render loop ── */
+  const clk=new THREE.Clock();
+  function render(){const d=clk.getDelta()*60;
+    g.rotation.y+=.015*d;arcGrp.rotation.y+=.0006*d;sNear.rotation.y-=.002;sFar.rotation.y-=.0012;
+    renderer.render(scene,cam);requestAnimationFrame(render);}
+
+  /* ── ScrollTriggers ── */
+  function startScrollAnim(){
+    gsap.registerPlugin(ScrollTrigger);
+    document.querySelectorAll('.text-block').forEach(el=>{
+      gsap.to(el,{opacity:1,y:0,duration:1.1,ease:'cubic-bezier(.6,0,.2,1)',
+        scrollTrigger:{trigger:el,start:'top 80%',toggleActions:'play none none reverse'}});
+    });
+
+    const tl=gsap.timeline({scrollTrigger:{trigger:'body',start:'top top',end:'bottom bottom',scrub:1.2}});
+    tl.to(cam.position,{z:12,y:2,ease:'power1.inOut'},0)
+      .to(dMat,{opacity:.8,duration:1.5},.4)
+      .to(cam.position,{x:-5,z:9,duration:4},.33)
+      .to(cam.position,{x:0,y:10,z:0,duration:4},.66)
+      .to(cam.rotation,{x:-Math.PI/2,y:0,z:0,duration:4},.66);
+
+    ScrollTrigger.create({trigger:'#section-stats',start:'top center',
+      onEnter:()=>{const o={v:0};gsap.to(o,{v:27000,duration:2,ease:'power2.out',
+        onUpdate:()=>statCounter.textContent=Math.floor(o.v).toLocaleString()});}});
+
+    gsap.to('#scroll-progress',{height:'100%',ease:'none',
+      scrollTrigger:{trigger:'body',start:'top top',end:'bottom bottom',scrub:0}});
+  }
+}
+
+function varColor(v){return new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue(v));}
+</script>
 </body>
 </html>
