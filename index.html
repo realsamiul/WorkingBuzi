@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,7 +43,7 @@ html,body{height:100%;width:100%;margin:0;overflow-x:hidden;
 #preloader{position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;flex-direction:column;
   z-index:200;pointer-events:none}
 #preloader canvas{width:100%;height:100%;position:absolute;top:0;left:0}
-#titleScramble{font-family:'Neue Montreal',sans-serif;font-size:2.2rem;letter-spacing:.25em;z-index:10}
+#titleScramble{font-family:'Neue Montreal',sans-serif;font-size:2.2rem;letter-spacing:.25em;z-index:10;color:white;}
 #preloader::after{content:'';width:160px;height:160px;border-radius:50%;
   background:radial-gradient(circle,#fff2 0%,transparent 70%);
   position:absolute;mix-blend-mode:overlay;animation:glint 3s infinite}
@@ -50,7 +51,7 @@ html,body{height:100%;width:100%;margin:0;overflow-x:hidden;
 
 /* ──  UI CHROME  ──────────────────────────────────────────── */
 .ui-layer{position:fixed;inset:0;padding:40px;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none;z-index:10}
-.logo{font-family:var(--subhead);letter-spacing:.25em;font-size:1.35rem;text-transform:uppercase}
+.logo{font-family:var(--subhead);letter-spacing:.25em;font-size:1.35rem;text-transform:uppercase;color:white;}
 .progress-bar-container{position:fixed;right:50px;top:50%;transform:translateY(-50%);
   width:1px;height:20vh;background:rgba(255,255,255,.18);z-index:20}
 .progress-bar-fill{width:100%;height:0;background:var(--brand-red)}
@@ -167,33 +168,65 @@ const pScene = new THREE.Scene();
 const pCam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
 pCam.position.set(0, 0, 4);
 
-// Load environment map
-new THREE.TextureLoader().load('milkyway_8k.jpg', t => {
-  t.mapping = THREE.EquirectangularReflectionMapping;
-  pScene.environment = t;
-});
+// Load environment map (with fallback)
+new THREE.TextureLoader().load('milkyway_8k.jpg', 
+  t => {
+    t.mapping = THREE.EquirectangularReflectionMapping;
+    pScene.environment = t;
+  },
+  undefined,
+  error => {
+    console.log('Environment map failed to load, using fallback');
+    pScene.background = new THREE.Color(0x000000);
+  }
+);
 
 // Load satellite model
 const gltfLoader = new GLTFLoader();
-gltfLoader.load('sentinel.glb', glb => {
-  const sat = glb.scene;
-  sat.scale.set(2, 2, 2);
-  pScene.add(sat);
-  
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(2, 2, 5);
-  pScene.add(light);
-  pScene.add(new THREE.AmbientLight(0xffffff, 0.4));
-  
-  gsap.to(pCam.position, {z: 2, x: 1.2, y: 0.4, duration: 4, ease: 'power1.inOut', delay: 0.5});
-  gsap.to(sat.rotation, {y: Math.PI * 2, duration: 6, ease: 'none', repeat: -1});
-});
+gltfLoader.load('sentinel.glb', 
+  glb => {
+    const sat = glb.scene;
+    sat.scale.set(2, 2, 2);
+    pScene.add(sat);
+    
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(2, 2, 5);
+    pScene.add(light);
+    pScene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    
+    gsap.to(pCam.position, {z: 2, x: 1.2, y: 0.4, duration: 4, ease: 'power1.inOut', delay: 0.5});
+    gsap.to(sat.rotation, {y: Math.PI * 2, duration: 6, ease: 'none', repeat: -1});
+    
+    // Start animation loop
+    animatePre();
+  },
+  undefined,
+  error => {
+    console.log('Satellite model failed to load:', error);
+    // Create a fallback sphere if model fails
+    const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+    const material = new THREE.MeshStandardMaterial({color: 0x888888});
+    const sat = new THREE.Mesh(geometry, material);
+    pScene.add(sat);
+    
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(2, 2, 5);
+    pScene.add(light);
+    pScene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    
+    gsap.to(pCam.position, {z: 2, x: 1.2, y: 0.4, duration: 4, ease: 'power1.inOut', delay: 0.5});
+    gsap.to(sat.rotation, {y: Math.PI * 2, duration: 6, ease: 'none', repeat: -1});
+    
+    animatePre();
+  }
+);
 
 function animatePre() {
-  pRend.render(pScene, pCam);
-  requestAnimationFrame(animatePre);
+  if (pRend && pScene && pCam) {
+    pRend.render(pScene, pCam);
+    requestAnimationFrame(animatePre);
+  }
 }
-animatePre();
 
 // GSAP ScrambleText animation
 gsap.registerPlugin(ScrambleTextPlugin);
@@ -208,7 +241,10 @@ function finishPreloader() {
     duration: 0.8, 
     ease: 'power2.inOut', 
     onComplete: () => {
-      document.getElementById('preloader').remove();
+      const preloader = document.getElementById('preloader');
+      if (preloader) {
+        preloader.style.display = 'none';
+      }
       initMainScene();
     }
   });
@@ -219,34 +255,68 @@ function finishPreloader() {
 ============================================================ */
 function initMainScene() {
   const cont = document.getElementById('canvas-container');
+  if (!cont) return;
+  
   const renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
   cont.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
   cam.position.set(0, 0, 18);
 
-  /* ── Texture loading ── */
+  /* ── Texture loading with fallbacks ── */
   const tex = {};
-  const mgr = new THREE.LoadingManager(() => {
-    cont.style.opacity = 1;
-    startScrollAnim();
-    render();
-  });
-  const tl = new THREE.TextureLoader(mgr);
+  const loadedTextures = {};
+  const totalTextures = 7;
+  let loadedCount = 0;
   
-  tex.alb = tl.load('albedo_8k.jpg');
-  tex.nit = tl.load('night_8k.jpg');
-  tex.cld = tl.load('clouds_4k.webp');
+  function onTextureLoaded() {
+    loadedCount++;
+    if (loadedCount === totalTextures) {
+      cont.style.opacity = 1;
+      startScrollAnim();
+      render();
+    }
+  }
+  
+  const tl = new THREE.TextureLoader();
+  
+  // Load textures with callbacks
+  tex.alb = tl.load('albedo_8k.jpg', onTextureLoaded, undefined, () => {
+    console.log('Albedo texture failed to load');
+    onTextureLoaded();
+  });
+  tex.nit = tl.load('night_8k.jpg', onTextureLoaded, undefined, () => {
+    console.log('Night texture failed to load');
+    onTextureLoaded();
+  });
+  tex.cld = tl.load('clouds_4k.webp', onTextureLoaded, undefined, () => {
+    console.log('Clouds texture failed to load');
+    onTextureLoaded();
+  });
   tex.sta = tl.load('milkyway_8k.jpg', t => {
     t.mapping = THREE.EquirectangularReflectionMapping;
+    onTextureLoaded();
+  }, undefined, () => {
+    console.log('Stars texture failed to load');
+    onTextureLoaded();
   });
-  tex.nrm = tl.load('normal_4k.jpg');
-  tex.spe = tl.load('spec_4k.jpg');
-  tex.rou = tl.load('rough_4k.jpg');
+  tex.nrm = tl.load('normal_4k.jpg', onTextureLoaded, undefined, () => {
+    console.log('Normal texture failed to load');
+    onTextureLoaded();
+  });
+  tex.spe = tl.load('spec_4k.jpg', onTextureLoaded, undefined, () => {
+    console.log('Specular texture failed to load');
+    onTextureLoaded();
+  });
+  tex.rou = tl.load('rough_4k.jpg', onTextureLoaded, undefined, () => {
+    console.log('Roughness texture failed to load');
+    onTextureLoaded();
+  });
 
   /* ── Earth group ── */
   const g = new THREE.Group();
@@ -260,7 +330,7 @@ function initMainScene() {
     emissiveMap: tex.nit,
     emissive: new THREE.Color('#222')
   });
-  const earth = new THREE.Mesh(new THREE.SphereGeometry(5, 128, 128), earthMat);
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(5, 64, 64), earthMat);
   g.add(earth);
   
   // Clouds
@@ -334,7 +404,7 @@ function initMainScene() {
     );
     const curve = new THREE.CatmullRomCurve3(points);
     const geo = new THREE.TubeGeometry(curve, 20, 0.02, 8, false);
-    const mat = new THREE.MeshBasicMaterial({color: varColor('--teal'), transparent: true, opacity: 0});
+    const mat = new THREE.MeshBasicMaterial({color: getComputedStyle(document.documentElement).getPropertyValue('--teal').trim(), transparent: true, opacity: 0});
     const mesh = new THREE.Mesh(geo, mat);
     arcGrp.add(mesh);
     
@@ -346,7 +416,9 @@ function initMainScene() {
       repeat: 1, 
       repeatDelay: 0.8,
       onComplete: () => {
-        arcGrp.remove(mesh);
+        if (arcGrp.children.includes(mesh)) {
+          arcGrp.remove(mesh);
+        }
         geo.dispose();
         mat.dispose();
       }
@@ -361,30 +433,37 @@ function initMainScene() {
   scene.add(new THREE.AmbientLight(0xffffff, 0.15));
 
   /* ── Resize ── */
-  window.addEventListener('resize', () => {
+  function handleResize() {
     cam.aspect = innerWidth / innerHeight;
     cam.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
-  });
+  }
+  window.addEventListener('resize', handleResize);
 
   /* ── Render loop ── */
   const clk = new THREE.Clock();
+  let animationId = null;
+  
   function render() {
+    if (!renderer || !scene || !cam) return;
+    
     const d = clk.getDelta() * 60;
     g.rotation.y += 0.0015 * d;
     clouds.rotation.y += 0.0005 * d;
-    arcGrp.rotation.y += 0.0006 * d;
-    sNear.rotation.y -= 0.0002;
-    sFar.rotation.y -= 0.00012;
-    debris.rotation.y += 0.0003 * d;
+    if (arcGrp) arcGrp.rotation.y += 0.0006 * d;
+    if (sNear) sNear.rotation.y -= 0.0002;
+    if (sFar) sFar.rotation.y -= 0.00012;
+    if (debris) debris.rotation.y += 0.0003 * d;
+    
     renderer.render(scene, cam);
-    requestAnimationFrame(render);
+    animationId = requestAnimationFrame(render);
   }
 
   /* ── ScrollTriggers ── */
   function startScrollAnim() {
     gsap.registerPlugin(ScrollTrigger);
     
+    // Animate text blocks
     document.querySelectorAll('.text-block').forEach(el => {
       gsap.to(el, {
         opacity: 1, 
@@ -394,17 +473,20 @@ function initMainScene() {
         scrollTrigger: {
           trigger: el, 
           start: 'top 80%', 
+          end: 'bottom 20%',
           toggleActions: 'play none none reverse'
         }
       });
     });
 
+    // Camera animation timeline
     const timeline = gsap.timeline({
       scrollTrigger: {
-        trigger: 'body', 
+        trigger: '.scroll-content', 
         start: 'top top', 
         end: 'bottom bottom', 
-        scrub: 1.2
+        scrub: 1.2,
+        markers: false // Set to true for debugging
       }
     });
     
@@ -415,6 +497,7 @@ function initMainScene() {
       .to(cam.position, {x: 0, y: 10, z: 0, duration: 4}, 0.66)
       .to(cam.rotation, {x: -Math.PI / 2, y: 0, z: 0, duration: 4}, 0.66);
 
+    // Counter animation
     ScrollTrigger.create({
       trigger: '#section-stats',
       start: 'top center',
@@ -425,27 +508,36 @@ function initMainScene() {
           duration: 2, 
           ease: 'power2.out',
           onUpdate: () => {
-            document.getElementById('stat-counter').textContent = Math.floor(o.v).toLocaleString();
+            const counter = document.getElementById('stat-counter');
+            if (counter) {
+              counter.textContent = Math.floor(o.v).toLocaleString();
+            }
           }
         });
-      }
+      },
+      once: true
     });
 
+    // Progress bar animation
     gsap.to('#scroll-progress', {
       height: '100%', 
       ease: 'none',
       scrollTrigger: {
-        trigger: 'body', 
+        trigger: '.scroll-content', 
         start: 'top top', 
         end: 'bottom bottom', 
         scrub: 0
       }
     });
   }
-}
-
-function varColor(v) {
-  return new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue(v));
+  
+  // Cleanup function
+  window.addEventListener('beforeunload', () => {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+    }
+    ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+  });
 }
 </script>
 </body>
