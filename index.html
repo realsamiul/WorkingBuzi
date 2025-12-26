@@ -41,7 +41,8 @@ html,body{height:100%;width:100%;margin:0;overflow-x:hidden;
 
 /* ──  PRE-LOADER  ─────────────────────────────────────────── */
 #preloader{position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;flex-direction:column;
-  z-index:200;pointer-events:none}
+  z-index:200;pointer-events:none;transition:opacity .6s ease}
+#preloader.is-hidden{opacity:0;pointer-events:none}
 #preloader canvas{width:100%;height:100%;position:absolute;top:0;left:0}
 #titleScramble{font-family:'Neue Montreal',sans-serif;font-size:2.2rem;letter-spacing:.25em;z-index:10;color:white;}
 #preloader::after{content:'';width:160px;height:160px;border-radius:50%;
@@ -144,10 +145,56 @@ p{font-family:var(--body);font-weight:500;font-size:1.05rem;line-height:1.8;colo
 }
 </script>
 
-<!-- GSAP + Plugins via CDN -->
+<!-- GSAP + Plugins via CDN (with inline fallback stubs if the CDN is blocked) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrambleTextPlugin.min.js"></script>
+<script>
+  if (typeof window.gsap === 'undefined') {
+    const noop = () => {};
+    const immediate = (vars = {}) => {
+      if (typeof vars.onComplete === 'function') vars.onComplete();
+      return { kill: noop };
+    };
+
+    // Lightweight stub so ScrollTrigger calls don't explode when GSAP is missing.
+    window.ScrollTrigger = {
+      create: immediate,
+      getAll: () => [],
+      refresh: noop,
+      kill: noop
+    };
+
+    const stubTimeline = {
+      to: () => stubTimeline,
+      add: () => stubTimeline
+    };
+
+    window.gsap = {
+      registerPlugin: noop,
+      to: immediate,
+      fromTo: (_t, _f, vars = {}) => immediate(vars),
+      timeline: () => stubTimeline,
+      set: noop
+    };
+
+    // Minimal ScrambleText stand-in so the preloader can still finish.
+    window.ScrambleTextPlugin = {};
+
+    console.warn('GSAP CDN blocked – using minimal fallbacks. Animations degraded but page will load.');
+  }
+</script>
+
+<!-- Preloader safety net: hide it after 8s even if scripts fail to run -->
+<script>
+  const preloaderFailSafe = setTimeout(() => {
+    const pre = document.getElementById('preloader');
+    if (pre && !pre.classList.contains('is-hidden')) {
+      pre.classList.add('is-hidden');
+      pre.style.display = 'none';
+    }
+  }, 8000);
+</script>
 
 <script type="module">
 import * as THREE from 'three';
@@ -169,7 +216,7 @@ const pCam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100)
 pCam.position.set(0, 0, 4);
 
 // Load environment map (with fallback)
-new THREE.TextureLoader().load('milkyway_8k.jpg', 
+new THREE.TextureLoader().load('clouds_8k.jpg',
   t => {
     t.mapping = THREE.EquirectangularReflectionMapping;
     pScene.environment = t;
@@ -228,21 +275,29 @@ function animatePre() {
   }
 }
 
-// GSAP ScrambleText animation
-gsap.registerPlugin(ScrambleTextPlugin);
-gsap.fromTo('#titleScramble', 
-  {scrambleText: {text: '', chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', speed: 0.35}},
-  {duration: 2, scrambleText: {text: 'M0NARQ', revealDelay: 0}, onComplete: finishPreloader}
-);
+// GSAP ScrambleText animation (with guard when plugin is missing)
+if (typeof ScrambleTextPlugin !== 'undefined') {
+  gsap.registerPlugin(ScrambleTextPlugin);
+  gsap.fromTo('#titleScramble',
+    {scrambleText: {text: '', chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', speed: 0.35}},
+    {duration: 2, scrambleText: {text: 'M0NARQ', revealDelay: 0}, onComplete: finishPreloader}
+  );
+} else {
+  // If the CDN blocks the plugin, just show the text and proceed.
+  document.getElementById('titleScramble').textContent = 'M0NARQ';
+  gsap.to('#titleScramble', {opacity: 1, duration: 0.4, onComplete: finishPreloader});
+}
 
 function finishPreloader() {
+  clearTimeout(preloaderFailSafe);
   gsap.to('#preloader', {
-    opacity: 0, 
-    duration: 0.8, 
-    ease: 'power2.inOut', 
+    opacity: 0,
+    duration: 0.8,
+    ease: 'power2.inOut',
     onComplete: () => {
       const preloader = document.getElementById('preloader');
       if (preloader) {
+        preloader.classList.add('is-hidden');
         preloader.style.display = 'none';
       }
       initMainScene();
@@ -271,7 +326,7 @@ function initMainScene() {
   /* ── Texture loading with fallbacks ── */
   const tex = {};
   const loadedTextures = {};
-  const totalTextures = 7;
+  const totalTextures = 6;
   let loadedCount = 0;
   
   function onTextureLoaded() {
@@ -294,15 +349,8 @@ function initMainScene() {
     console.log('Night texture failed to load');
     onTextureLoaded();
   });
-  tex.cld = tl.load('clouds_4k.webp', onTextureLoaded, undefined, () => {
+  tex.cld = tl.load('clouds_8k.jpg', onTextureLoaded, undefined, () => {
     console.log('Clouds texture failed to load');
-    onTextureLoaded();
-  });
-  tex.sta = tl.load('milkyway_8k.jpg', t => {
-    t.mapping = THREE.EquirectangularReflectionMapping;
-    onTextureLoaded();
-  }, undefined, () => {
-    console.log('Stars texture failed to load');
     onTextureLoaded();
   });
   tex.nrm = tl.load('normal_4k.jpg', onTextureLoaded, undefined, () => {
@@ -363,16 +411,26 @@ function initMainScene() {
   g.add(new THREE.Mesh(new THREE.SphereGeometry(5.2, 64, 64), atmosphereMat));
 
   /* ── Stars ── */
-  function createStarSphere(radius, opacity) {
-    const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, 64, 64),
-      new THREE.MeshBasicMaterial({map: tex.sta, side: THREE.BackSide, transparent: true, opacity: opacity})
-    );
-    scene.add(mesh);
-    return mesh;
+  function createStarField(count, spread) {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const r = Math.random() * spread + 60;
+      const theta = Math.random() * Math.PI;
+      const phi = Math.random() * 2 * Math.PI;
+      const sinTheta = Math.sin(theta);
+      pos[i * 3] = r * sinTheta * Math.cos(phi);
+      pos[i * 3 + 1] = r * sinTheta * Math.sin(phi);
+      pos[i * 3 + 2] = r * Math.cos(theta);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({color: '#8fb6ff', size: 0.7, sizeAttenuation: true, transparent: true, opacity: 0.45});
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+    return points;
   }
-  const sNear = createStarSphere(90, 0.28);
-  const sFar = createStarSphere(120, 0.55);
+  const sNear = createStarField(2000, 30);
+  const sFar = createStarField(3200, 60);
 
   /* ── Debris ── */
   const dCnt = devicePixelRatio < 1.5 ? 12000 : 27000;
@@ -426,7 +484,8 @@ function initMainScene() {
   }
 
   /* ── Lights ── */
-  scene.environment = tex.sta;
+  scene.environment = null;
+  scene.background = new THREE.Color(0x030712);
   const sunLight = new THREE.DirectionalLight(0xffffff, 1);
   sunLight.position.set(20, 10, 10);
   scene.add(sunLight);
